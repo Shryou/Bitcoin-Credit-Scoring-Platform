@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>比特幣信用評分平台</title>
+<style>
+:root{
+  --bg:#0a1020;--bg2:#0d1528;--panel:#121b31;--panel2:#18233d;--line:#25324f;--line2:#34446a;
+  --text:#e8edf7;--muted:#8d99b3;--faint:#5d6a86;
+  --accent:#f7931a;--accent2:#ffb347;--accentSoft:rgba(247,147,26,.14);--onAccent:#1a1206;
+  --good:#22c55e;--warn:#eab308;--bad:#ef4444;--info:#38bdf8;
+  --goodSoft:rgba(34,197,94,.14);--badSoft:rgba(239,68,68,.14);--warnSoft:rgba(234,179,8,.14);
+  --gA:#22c55e;--gB:#84cc16;--gC:#eab308;--gD:#f97316;--gE:#ef4444;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --radius:14px;
+}
+[data-theme=light]{
+  --bg:#f3f5f9;--bg2:#e9edf4;--panel:#ffffff;--panel2:#f6f8fc;--line:#dde3ee;--line2:#c6cfdf;
+  --text:#172033;--muted:#5a6680;--faint:#98a2b6;
+  --accent:#e7820b;--accent2:#f7931a;--accentSoft:rgba(247,147,26,.12);--onAccent:#ffffff;
+  --good:#16a34a;--warn:#b98105;--bad:#dc2626;--info:#0284c7;
+  --goodSoft:rgba(22,163,74,.10);--badSoft:rgba(220,38,38,.10);--warnSoft:rgba(202,138,4,.12);
+  --gA:#16a34a;--gB:#65a30d;--gC:#ca8a04;--gD:#ea580c;--gE:#dc2626;
+  --shadow:0 6px 22px rgba(20,30,60,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC","Heiti TC",sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+button,input,select{font:inherit;color:inherit}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}.faint{color:var(--faint)}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}.acc{color:var(--accent)}
+.hidden{display:none!important}
+h1,h2,h3,h4{margin:0;line-height:1.3}
+h2{font-size:18px}h3{font-size:15px}
+
+/* ---------- 頁首 ---------- */
+header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.hbar{max-width:1320px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;white-space:nowrap}
+.logo .coin{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px;box-shadow:0 0 0 4px var(--accentSoft)}
+nav.tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);padding:4px;border-radius:12px}
+nav.tabs button{border:0;background:transparent;padding:7px 16px;border-radius:9px;cursor:pointer;color:var(--muted);font-weight:600;white-space:nowrap}
+nav.tabs button:hover{color:var(--text)}
+nav.tabs button.on{background:var(--accent);color:var(--onAccent)}
+.hright{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;white-space:nowrap}
+.chip.click{cursor:pointer}.chip.click:hover{border-color:var(--accent)}
+.iconbtn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 11px;cursor:pointer;font-size:13px;white-space:nowrap}
+.iconbtn:hover{border-color:var(--accent)}
+
+main{max-width:1320px;margin:0 auto;padding:22px 20px 60px}
+.page{display:none;animation:fade .3s ease}
+.page.on{display:block}
+#dataSection:not(:empty),#aiSection:not(:empty),#resultSection:not(:empty){margin-top:18px}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- 版面 ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);min-width:0}
+.card+.card,.grid+.card,.card+.grid,.grid+.grid{margin-top:18px}
+.chead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.chead p{margin:4px 0 0;font-size:13px}
+.step{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accentSoft);color:var(--accent);font-size:13px;font-weight:800;margin-right:8px;vertical-align:1px}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g21{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.g12{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.span2{grid-column:span 2}
+@media (max-width:980px){.g2,.g3,.g21,.g12{grid-template-columns:minmax(0,1fr)}.span2{grid-column:auto}}
+
+/* ---------- 按鈕 ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line2);background:var(--panel2);padding:10px 18px;border-radius:10px;cursor:pointer;font-weight:600;transition:.15s;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--accent);transform:translateY(-1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08)}
+.btn.good{background:var(--goodSoft);border-color:var(--good);color:var(--good)}
+.btn.warn{background:var(--warnSoft);border-color:var(--warn);color:var(--warn)}
+.btn.bad{background:var(--badSoft);border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:6px 12px;font-size:13px}
+.btn.block{width:100%}
+.seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{border:0;background:transparent;padding:6px 14px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+
+/* ---------- 角色卡 ---------- */
+.persona-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:980px){.persona-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.persona-grid{grid-template-columns:minmax(0,1fr)}}
+.pcard{position:relative;text-align:left;background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;transition:.18s}
+.pcard:hover{border-color:var(--accent);transform:translateY(-2px)}
+.pcard.on{border-color:var(--accent);background:var(--accentSoft)}
+.pcard .flag{font-size:28px;line-height:1}
+.pcard .pn{font-weight:700;font-size:16px;margin-top:8px}
+.pcard .pt{color:var(--muted);font-size:13px}
+.pcard .pb{font-size:13px;margin-top:8px;color:var(--muted);line-height:1.5}
+.pcard .ptag{position:absolute;top:12px;right:12px}
+
+/* ---------- 標籤 ---------- */
+.gbadge{display:inline-grid;place-items:center;min-width:28px;height:28px;padding:0 6px;border-radius:8px;font-weight:800;color:#fff;font-size:15px}
+.gbadge.lg{min-width:54px;height:54px;font-size:28px;border-radius:14px}
+.gbadge.sm{min-width:22px;height:22px;font-size:12px;border-radius:6px}
+.gA{background:var(--gA)}.gB{background:var(--gB)}.gC{background:var(--gC)}.gD{background:var(--gD)}.gE{background:var(--gE)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:2px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.good{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent);background:var(--goodSoft)}
+.pill.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:var(--badSoft)}
+.pill.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:var(--warnSoft)}
+.pill.acc{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:var(--accentSoft)}
+
+/* ---------- 數據 ---------- */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
+.stat .l{font-size:12px;color:var(--muted)}
+.stat .v{font-size:19px;font-weight:700;font-family:var(--mono);font-variant-numeric:tabular-nums;margin-top:2px;overflow-wrap:anywhere}
+.stat .s{font-size:12px;color:var(--faint)}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi .v{font-size:21px;font-weight:700;font-family:var(--mono);font-variant-numeric:tabular-nums;margin-top:2px;overflow-wrap:anywhere}
+.kpi .s{font-size:12px;color:var(--faint)}
+
+table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+table.t th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t td{padding:8px 8px;border-bottom:1px solid var(--line)}
+table.t tr:last-child td{border-bottom:0}
+table.t td.r,table.t th.r{text-align:right}
+table.t tr.hl td{background:var(--accentSoft)}
+.tablewrap{overflow-x:auto}
+
+/* ---------- 交易列表 ---------- */
+.txlist{display:flex;flex-direction:column;gap:2px;max-height:330px;overflow:auto}
+.tx{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px dashed var(--line);font-size:13px}
+.tx .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:13px}
+.tx .ic.in{background:var(--goodSoft);color:var(--good)}
+.tx .ic.out{background:var(--badSoft);color:var(--bad)}
+.tx .ic.bill{background:var(--accentSoft);color:var(--accent)}
+.tx .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600}
+
+/* ---------- AI 分析 ---------- */
+.feat{display:grid;grid-template-columns:150px 1fr 70px;gap:12px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);opacity:.35;transition:opacity .3s}
+.feat.done,.feat.run{opacity:1}
+.feat .fn{font-weight:600;font-size:14px}
+.feat .fd{font-size:12px;color:var(--muted)}
+.feat .fv{text-align:right;font-family:var(--mono);font-weight:700}
+.track{height:8px;background:var(--panel2);border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.track>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;transition:width .5s ease}
+.track.neg>i{background:linear-gradient(90deg,var(--bad),#f87171)}
+@media (max-width:640px){.feat{grid-template-columns:1fr 60px}.feat .track{grid-column:1/-1;order:3}}
+.formula{font-family:var(--mono);font-size:13px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;line-height:1.9;overflow-x:auto;white-space:nowrap}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- 滑桿 ---------- */
+input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+.slider{padding:8px 0;border-bottom:1px dashed var(--line)}
+.slider .top{display:flex;justify-content:space-between;font-size:14px}
+.slider .top b{font-family:var(--mono)}
+.slider .fd{font-size:12px;color:var(--muted)}
+.sliders{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 24px}
+@media (max-width:980px){.sliders{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- 表單 ---------- */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.inp{display:flex;align-items:center;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:0 12px}
+.inp:focus-within{border-color:var(--accent)}
+.inp input{flex:1;min-width:0;border:0;background:transparent;padding:10px 0;outline:none;font-family:var(--mono);font-size:16px}
+.inp span{color:var(--muted);font-size:13px}
+
+/* ---------- 解釋 ---------- */
+.explain p{margin:0 0 10px}
+.explain ul{margin:0;padding-left:20px}
+.explain li{margin:4px 0}
+.sugg{display:flex;gap:12px;align-items:flex-start;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:8px;font-size:14px}
+.sugg .si{font-size:18px;line-height:1.3}
+.gaugeWrap{text-align:center}
+.bigscore{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:-6px}
+.prob{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+
+/* ---------- 圖表 ---------- */
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+svg text{font-family:inherit}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* ---------- 貸款 ---------- */
+.loan{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:14px;margin-bottom:10px}
+.loan .lh{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.loan .kv{font-size:13px}
+.progress{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin:8px 0}
+.progress i{display:block;height:100%;background:var(--good);border-radius:99px}
+.events{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow:auto;font-size:13px}
+.ev{display:grid;grid-template-columns:90px 1fr;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.ev .em{color:var(--faint);font-family:var(--mono);font-size:12px}
+.ffwd{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.ffwd{grid-template-columns:minmax(0,1fr)}}
+.ffwd .btn{flex-direction:column;gap:2px;padding:12px 8px;white-space:normal}
+.ffwd .btn small{font-weight:400;font-size:12px;opacity:.85}
+
+/* ---------- 審核清單 ---------- */
+.modalBg{position:fixed;inset:0;background:rgba(5,8,18,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:grid;place-items:center;z-index:100;padding:16px;animation:fade .2s}
+.modal{background:var(--panel);border:1px solid var(--line2);border-radius:16px;width:min(620px,100%);max-height:92vh;overflow:auto;padding:24px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.modal h2{display:flex;align-items:center;gap:10px}
+.check{display:grid;grid-template-columns:30px 1fr;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line);opacity:.35;transition:opacity .25s}
+.check.on{opacity:1}
+.check .ci{font-size:18px;line-height:1.4;text-align:center}
+.check .ct{font-weight:600}
+.check .cd{font-size:13px;color:var(--muted);font-family:var(--mono);overflow-wrap:anywhere}
+.check.fail .cd{color:var(--bad)}
+.verdict{margin-top:16px;padding:14px 16px;border-radius:12px;font-weight:700;display:flex;gap:10px;align-items:center}
+.verdict.ok{background:var(--goodSoft);color:var(--good);border:1px solid var(--good)}
+.verdict.no{background:var(--badSoft);color:var(--bad);border:1px solid var(--bad)}
+.flow{display:flex;flex-direction:column;gap:0}
+.fstep{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px dashed var(--line);opacity:.3;transition:opacity .3s}
+.fstep.on{opacity:1}
+.fstep .fi{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line2)}
+.fstep .fv{font-family:var(--mono);font-weight:700;text-align:right}
+
+/* ---------- 零知識證明 ---------- */
+.zkcol{border-radius:12px;padding:16px;border:1px solid var(--line);background:var(--panel2)}
+.zkcol.trad{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.zkcol.zk{border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
+.zkcol h3{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.leak{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.leak:last-child{border-bottom:0}
+.zkflow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:980px){.zkflow{grid-template-columns:minmax(0,1fr)}}
+.zstep{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--panel2);opacity:.4;transition:.3s;min-width:0}
+.zstep.on{opacity:1;border-color:var(--accent)}
+.zstep.ok{border-color:var(--good)}
+.zstep.no{border-color:var(--bad)}
+.zstep .zt{display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:8px}
+.zstep .zn{width:26px;height:26px;border-radius:50%;background:var(--accentSoft);color:var(--accent);display:grid;place-items:center;font-size:13px;font-weight:800}
+.hash{font-family:var(--mono);font-size:12px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;overflow-wrap:anywhere;word-break:break-all;margin-top:4px;color:var(--accent)}
+.side{font-size:12px;font-weight:700;letter-spacing:.04em;margin-bottom:6px}
+.side.priv{color:var(--warn)}.side.pub{color:var(--info)}
+.zres{font-size:20px;font-weight:800;margin-top:10px}
+.notice{font-size:12.5px;color:var(--muted);border:1px dashed var(--line2);border-radius:10px;padding:10px 14px;margin-top:18px;display:flex;gap:8px}
+.empty{text-align:center;padding:60px 20px}
+.empty .ei{font-size:44px}
+.empty p{color:var(--muted);margin:10px 0 18px}
+
+/* ---------- 提示 ---------- */
+#toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px;z-index:200;max-width:calc(100vw - 36px)}
+.toast{background:var(--panel);border:1px solid var(--line2);border-left:4px solid var(--accent);border-radius:10px;padding:11px 16px;box-shadow:var(--shadow);font-size:14px;animation:tin .3s ease}
+.toast.good{border-left-color:var(--good)}.toast.bad{border-left-color:var(--bad)}
+@keyframes tin{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+.addr{font-family:var(--mono);font-size:12.5px;overflow-wrap:anywhere}
+.connect{margin-top:14px;font-size:14px}
+.connect .cl{padding:3px 0}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spacer{flex:1}
+.mt{margin-top:14px}.mt2{margin-top:22px}
+@media (max-width:640px){
+  main{padding:16px 16px 50px}
+  .hbar{padding:10px 16px;gap:10px}
+  nav.tabs{order:3;width:100%;overflow-x:auto}
+  nav.tabs button{flex:1;padding:7px 8px}
+  .hright{margin-left:0}
+  .card{padding:16px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hbar">
+    <div class="logo"><div class="coin">₿</div>比特幣信用評分平台</div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="score">信用評分</button>
+      <button data-tab="loan">借貸池</button>
+      <button data-tab="lend">出借人</button>
+      <button data-tab="zk">隱私證明</button>
+    </nav>
+    <div class="hright">
+      <div class="chip" id="dateChip"></div>
+      <div class="chip click" id="personaChip"></div>
+      <button class="iconbtn" id="themeBtn"></button>
+      <button class="iconbtn" id="resetBtn">↺ 重置</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ===== 信用評分 ===== -->
+  <section class="page" id="page-score">
+    <div class="card">
+      <div class="chead"><div><h2><span class="step">1</span>連接錢包</h2><p class="muted">選擇一位借款人，系統會模擬連接其比特幣錢包，讀取近 12 個月的閃電網路交易紀錄。</p></div></div>
+      <div class="persona-grid" id="personaGrid"></div>
+      <div id="connectBox"></div>
+    </div>
+    <div id="dataSection"></div>
+    <div id="aiSection"></div>
+    <div id="resultSection"></div>
+  </section>
+
+  <!-- ===== 借貸池 ===== -->
+  <section class="page" id="page-loan"></section>
+
+  <!-- ===== 出借人 ===== -->
+  <section class="page" id="page-lend"></section>
+
+  <!-- ===== 隱私證明 ===== -->
+  <section class="page" id="page-zk"></section>
+</main>
+
+<div id="modalRoot"></div>
+<div id="toasts"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   一、亂數與工具
+   ========================================================= */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const $=s=>document.querySelector(s);
+const fmt=n=>Math.round(n).toLocaleString('zh-TW');
+const sats=n=>fmt(n)+' 聰';
+const BTC_USD=60000; // 模擬匯率
+const usd=n=>{const v=n/1e8*BTC_USD;return '約 '+(v>=100?fmt(v):v.toFixed(2))+' 美元';};
+const pct=(v,d=1)=>(v*100).toFixed(d)+'%';
+const sgn=(v,d=1)=>(v>=0?'+':'−')+Math.abs(v).toFixed(d);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function cyrb53(str,seed){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);}
+function hash64(str){let s='';for(let i=0;i<5;i++)s+=cyrb53(str,i*977+13).toString(16).padStart(14,'0');return '0x'+s.slice(0,64);}
+function randHex(n){const a=new Uint8Array(n);try{crypto.getRandomValues(a);}catch(e){for(let i=0;i<n;i++)a[i]=Math.floor(Math.random()*256);}return Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');}
+const short=h=>h.slice(0,10)+'…'+h.slice(-6);
+
+/* =========================================================
+   二、模擬時間
+   ========================================================= */
+const SIM_START={y:2026,m:10};
+function monthLabel(offset){let y=SIM_START.y,m=SIM_START.m+offset;while(m>12){m-=12;y++;}while(m<1){m+=12;y--;}return {y,m,text:`${y} 年 ${m} 月`,short:`${m}月`,tiny:`${String(y).slice(2)}/${m}`};}
+
+/* =========================================================
+   三、角色與交易資料產生器
+   ========================================================= */
+const PERSONAS={
+  maria:{id:'maria',name:'瑪麗亞',flag:'🇵🇭',title:'街頭小販',place:'菲律賓・馬尼拉',seed:1101,ageMonths:18,balance:2400000,
+    daily:[15,30],amt:[300,2400],customers:420,zipf:0.75,monthSd:0.12,spend:0.80,suppliers:6,supplierPerMonth:10,
+    bills:{lateProb:0.08},past:{onTime:18,late:0,def:0},pastText:'過去 3 筆借款、18 期全部準時',vouches:2,risk:0,
+    blurb:'每天 15–30 筆閃電網路小額收款，顧客眾多，每月固定存下約兩成收入。'},
+  otieno:{id:'otieno',name:'奧提諾',flag:'🇰🇪',title:'機車快遞司機',place:'肯亞・奈洛比',seed:2202,ageMonths:10,balance:900000,
+    daily:[3,8],amt:[2000,7000],customers:45,zipf:1.0,monthSd:0.8,spend:0.88,suppliers:4,supplierPerMonth:8,
+    bills:{lateProb:0.2},past:{onTime:12,late:0,def:0},pastText:'過去 2 筆借款、12 期全部準時',vouches:2,risk:0,
+    blurb:'收入隨接單量大幅波動，但過去兩筆小額借款都準時還清。'},
+  carlos:{id:'carlos',name:'卡洛斯',flag:'🇸🇻',title:'比特幣新用戶',place:'薩爾瓦多・聖薩爾瓦多',seed:3303,ageMonths:2,balance:350000,
+    daily:[0,1.4],amt:[4000,16000],customers:9,zipf:1.1,monthSd:0.15,spend:0.88,suppliers:3,supplierPerMonth:4,
+    bills:{lateProb:0},past:{onTime:0,late:0,def:0},pastText:'尚無借款紀錄',vouches:2,risk:0,
+    blurb:'剛開始使用比特幣，交易很少、沒有借款紀錄，有兩位社群擔保人。'},
+  custom:{id:'custom',name:'自訂角色',flag:'🛠️',title:'互動實驗',place:'—',seed:4404,ageMonths:12,balance:3000000,custom:true,
+    past:{onTime:0,late:0,def:0},vouches:0,risk:0,
+    blurb:'直接拖動九個特徵滑桿，即時觀察分數與每個因子的影響。'}
+};
+const PERSONA_ORDER=['maria','otieno','carlos','custom'];
+
+function walletAddress(seed){const r=mulberry32(seed*7+3);const cs='qpzry9x8gf2tvdw0s3jn54khce6mua7l';let s='bc1q';for(let i=0;i<38;i++)s+=cs[Math.floor(r()*32)];return s;}
+const zipfCache={};
+function zipfPick(r,n,s){const key=n+'_'+s;let cdf=zipfCache[key];if(!cdf){cdf=[];let t=0;for(let k=1;k<=n;k++){t+=1/Math.pow(k,s);cdf.push(t);}cdf=cdf.map(v=>v/t);zipfCache[key]=cdf;}const u=r();let lo=0,hi=n-1;while(lo<hi){const mid=(lo+hi)>>1;if(cdf[mid]<u)lo=mid+1;else hi=mid;}return lo+1;}
+
+function generateData(p){
+  const r=mulberry32(p.seed);
+  const months=Math.min(12,p.ageMonths);
+  const tx=[],monthly=[];
+  for(let i=months;i>=1;i--){
+    const ml=monthLabel(-i);
+    const f=Math.max(0.15,p.monthSd>0.3?Math.exp(gauss(r)*p.monthSd-p.monthSd*p.monthSd/2):1+gauss(r)*p.monthSd);
+    let inflow=0,outflow=0,count=0;
+    for(let d=1;d<=30;d++){
+      const n=Math.round((p.daily[0]+r()*(p.daily[1]-p.daily[0]))*f);
+      for(let k=0;k<n;k++){
+        const a=Math.round(p.amt[0]+r()*(p.amt[1]-p.amt[0]));
+        const c=zipfPick(r,p.customers,p.zipf);
+        tx.push({y:ml.y,m:ml.m,d,type:'in',cat:'收款',cp:'顧客 #'+String(c).padStart(3,'0'),cpId:'c'+c,amt:a});
+        inflow+=a;count++;
+      }
+    }
+    const target=inflow*clamp(p.spend+gauss(r)*0.03,0.3,1.05);
+    const bill=Math.round(inflow*0.04);
+    let rest=target-bill;
+    for(let k=0;k<p.supplierPerMonth;k++){
+      const a=Math.round(rest/(p.supplierPerMonth-k)*(0.7+r()*0.6));
+      const amt=k===p.supplierPerMonth-1?Math.round(rest):Math.min(a,Math.round(rest));
+      rest-=amt;
+      const s=1+Math.floor(r()*p.suppliers);
+      tx.push({y:ml.y,m:ml.m,d:1+Math.floor(r()*30),type:'out',cat:'付款',cp:'供應商 #'+s,cpId:'s'+s,amt});
+      outflow+=amt;count++;
+    }
+    const late=r()<p.bills.lateProb;
+    tx.push({y:ml.y,m:ml.m,d:late?24:8,type:'bill',cat:'繳費',cp:i%2?'電信公司（話費）':'電力公司（電費）',cpId:'bill',amt:bill,late});
+    outflow+=bill;count++;
+    monthly.push({label:ml,inflow,outflow,count,billLate:late});
+  }
+  tx.sort((a,b)=>(a.y-b.y)||(a.m-b.m)||(a.d-b.d));
+  return {tx,monthly,months,address:walletAddress(p.seed)};
+}
+
+/* =========================================================
+   四、AI 信用評分模型（邏輯迴歸計分卡）
+   ========================================================= */
+const FEATURES=[
+  {k:'f1',name:'帳戶年齡',short:'帳戶年齡',beta:1.00,mu:0.40,desc:'開立月數 ÷ 24，上限 1'},
+  {k:'f2',name:'交易頻率',short:'交易頻率',beta:0.96,mu:0.40,desc:'每月平均交易筆數 ÷ 300，上限 1'},
+  {k:'f3',name:'收入穩定度',short:'收入穩定',beta:1.00,mu:0.55,desc:'1 − 月收入變異係數；資料不足 6 個月時向 0.5 收斂'},
+  {k:'f4',name:'交易對手多樣性',short:'對手多樣',beta:0.80,mu:0.50,desc:'收款對象分布的資訊熵 ÷ ln 500'},
+  {k:'f5',name:'儲蓄率',short:'儲蓄率',beta:2.40,mu:0.12,desc:'（流入 − 流出）÷ 流入'},
+  {k:'f6',name:'還款紀錄',short:'還款紀錄',beta:2.40,mu:0.55,desc:'準時比例（逾期算半次、違約算五次失敗），以中性值 0.5 平滑'},
+  {k:'f7',name:'社群擔保',short:'社群擔保',beta:0.64,mu:0.25,desc:'擔保人數 ÷ 5，上限 1'},
+  {k:'f8',name:'繳費紀錄',short:'繳費紀錄',beta:0.80,mu:0.65,desc:'話費、電費以聰準時繳納的比例，以中性值 0.5 平滑'},
+  {k:'f9',name:'風險訊號',short:'低風險',beta:-2.40,mu:0.05,desc:'與高風險地址互動、異常大額流出、平台違約紀錄（每次 +0.25；0 代表無）'}
+];
+const PDO=40,FACTOR=PDO/Math.LN2,OFFSET=620-FACTOR*Math.log(20),BETA0=-1.38;
+const BASE_SCORE=OFFSET+FACTOR*(BETA0+FEATURES.reduce((s,F)=>s+F.beta*F.mu,0));
+const smooth=(good,total,prior,w)=>(good+prior*w)/(total+w);
+
+const GRADES=[
+  {g:'A',min:750,coll:0.50,apr:0.06,limit:5000000,pd:0.010},
+  {g:'B',min:680,coll:0.80,apr:0.09,limit:2000000,pd:0.025},
+  {g:'C',min:600,coll:1.10,apr:0.13,limit:800000,pd:0.050},
+  {g:'D',min:520,coll:1.50,apr:0.18,limit:300000,pd:0.090},
+  {g:'E',min:300,coll:2.00,apr:null,limit:0,pd:0.200}
+];
+GRADES.forEach(G=>G.lgd=Math.max(0.05,1-G.coll*0.95));
+const gradeOf=s=>GRADES.find(G=>s>=G.min);
+const nextGrade=G=>GRADES[GRADES.indexOf(G)-1]||null;
+const gbadge=(g,cls='')=>`<span class="gbadge g${g} ${cls}">${g}</span>`;
+
+const DATA={},TXF={};
+const addressOf=id=>walletAddress(PERSONAS[id].seed);
+function dataOf(id){if(!DATA[id])DATA[id]=generateData(PERSONAS[id]);return DATA[id];}
+function txFeatures(id){
+  if(TXF[id])return TXF[id];
+  const p=PERSONAS[id],data=dataOf(id),months=data.months;
+  const f1=clamp(p.ageMonths/24,0,1);
+  const avgCount=data.monthly.reduce((s,m)=>s+m.count,0)/months;
+  const f2=clamp(avgCount/300,0,1);
+  const inc=data.monthly.map(m=>m.inflow);
+  const mean=inc.reduce((a,b)=>a+b,0)/inc.length;
+  const sd=Math.sqrt(inc.reduce((s,v)=>s+(v-mean)**2,0)/inc.length);
+  const cv=sd/mean,raw3=clamp(1-cv,0,1);
+  const f3=months>=6?raw3:(raw3*months+0.5*(6-months))/6;
+  const cnt={};let n=0;
+  for(const t of data.tx)if(t.type==='in'){cnt[t.cpId]=(cnt[t.cpId]||0)+1;n++;}
+  let H=0;for(const k in cnt){const q=cnt[k]/n;H-=q*Math.log(q);}
+  const f4=clamp(H/Math.log(500),0,1);
+  const tin=inc.reduce((a,b)=>a+b,0),tout=data.monthly.reduce((s,m)=>s+m.outflow,0);
+  const f5=clamp((tin-tout)/tin,0,1);
+  const billTotal=data.monthly.length,billOn=data.monthly.filter(m=>!m.billLate).length;
+  return TXF[id]={f1,f2,f3,f4,f5,billOn,billTotal,stats:{avgCount,avgIn:mean,avgOut:tout/months,cv,H,cpCount:Object.keys(cnt).length,total:data.tx.length,tin,tout,months}};
+}
+function histOf(id){const p=PERSONAS[id],h=per(id).hist;return {onTime:p.past.onTime+h.onTime,late:p.past.late+h.late,def:p.past.def+h.def};}
+const repayGood=h=>h.onTime+0.5*h.late, repayTotal=h=>h.onTime+h.late+5*h.def;
+function featuresOf(id,o={}){
+  const P=per(id);
+  if(PERSONAS[id].custom){
+    const c=P.custom,h=P.hist;
+    const x={...c};
+    x.f6=(c.f6*8+repayGood(h))/(8+repayTotal(h));
+    x.f9=clamp(c.f9+0.25*h.def,0,1);
+    return x;
+  }
+  const t=txFeatures(id),p=PERSONAS[id];
+  const h=o.hist||histOf(id);
+  const vouch=o.vouches!=null?o.vouches:p.vouches;
+  const bOn=t.billOn+(o.billExtra||0),bTot=t.billTotal+(o.billExtra||0);
+  return {f1:t.f1,f2:t.f2,f3:t.f3,f4:t.f4,f5:o.f5!=null?o.f5:t.f5,f6:smooth(repayGood(h),repayTotal(h),0.5,4),f7:clamp(vouch/5,0,1),f8:smooth(bOn,bTot,0.5,3),f9:clamp(p.risk+0.25*per(id).hist.def,0,1)};
+}
+function scoreOf(x){
+  let z=BETA0;const contrib=[];
+  FEATURES.forEach(F=>{z+=F.beta*x[F.k];contrib.push({k:F.k,name:F.name,pts:FACTOR*F.beta*(x[F.k]-F.mu)});});
+  const raw=OFFSET+FACTOR*z,score=clamp(raw,300,850);
+  return {z,P:1/(1+Math.exp(-z)),raw,score:Math.round(score),base:BASE_SCORE,contrib,clampAdj:score-raw,grade:gradeOf(Math.round(score))};
+}
+const scoreFor=id=>scoreOf(featuresOf(id));
+const percentile=(x,mu)=>clamp(Math.round(100/(1+Math.exp(-(x-mu)/0.12))),1,99);
+
+/* =========================================================
+   五、狀態與儲存
+   ========================================================= */
+const STORE='btc-credit-demo-v1';
+const CUSTOM_DEFAULT={f1:0.5,f2:0.5,f3:0.6,f4:0.6,f5:0.15,f6:0.6,f7:0.4,f8:0.7,f9:0};
+const U0=0.66; // 基準使用率
+function defaultState(){return {theme:'dark',tab:'score',persona:null,month:0,per:{},
+  pool:{deposits:50000000,shares:50000000,others:{A:12000000,B:10000000,C:8000000,D:3000000},reserve:2500000,
+        lp:{wallet:10000000,shares:0,principal:0},log:[]}};}
+let S=defaultState();
+function load(){try{const raw=localStorage.getItem(STORE);if(raw){const o=JSON.parse(raw);S=Object.assign(defaultState(),o);}}catch(e){}}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}}
+function per(id){if(!S.per[id])S.per[id]={connected:false,analyzed:false,hist:{onTime:0,late:0,def:0},loans:[],scoreHist:[],events:[],wallet:PERSONAS[id].balance,custom:{...CUSTOM_DEFAULT}};return S.per[id];}
+const cur=()=>S.persona;
+const UI={connecting:false,analyzing:false,revealed:{},loanForm:null,zk:{threshold:650,phase:0,res:null},auditing:false};
+
+/* =========================================================
+   六、資金池計算
+   ========================================================= */
+function userBorrowed(){const b={A:0,B:0,C:0,D:0};for(const id in S.per)for(const L of S.per[id].loans)if(L.status==='active')b[L.grade]+=L.remaining;return b;}
+function borrowedByGrade(){const u=userBorrowed(),o=S.pool.others;return {A:o.A+u.A,B:o.B+u.B,C:o.C+u.C,D:o.D+u.D};}
+const totalBorrowed=()=>Object.values(borrowedByGrade()).reduce((a,b)=>a+b,0);
+const util=()=>totalBorrowed()/S.pool.deposits;
+const available=()=>Math.max(0,S.pool.deposits-totalBorrowed());
+const kink=u=>u<=0.8?0.08*u/0.8:0.08+0.40*(u-0.8)/0.2;
+const marketAdj=u=>Math.max(0,kink(u)-kink(U0));
+const loanAPR=G=>G.apr==null?null:G.apr+marketAdj(util());
+const sharePrice=()=>S.pool.deposits/S.pool.shares;
+function annualInterest(){let s=0;const o=S.pool.others;for(const g in o)s+=o[g]*GRADES.find(G=>G.g===g).apr;for(const id in S.per)for(const L of S.per[id].loans)if(L.status==='active')s+=L.remaining*L.apr;return s;}
+const supplyAPY=()=>annualInterest()*0.9/S.pool.deposits;
+function expectedLoss(){const b=borrowedByGrade();let s=0;for(const g in b){const G=GRADES.find(x=>x.g===g);s+=b[g]*G.pd*G.lgd;}return s;}
+const monthlyPay=(P,apr,n)=>{const r=apr/12;return r===0?P/n:P*r/(1-Math.pow(1+r,-n));};
+
+/* =========================================================
+   七、SVG 圖表
+   ========================================================= */
+const svg=(w,h,inner,label='')=>`<svg viewBox="0 0 ${w} ${h}" class="chart" role="img" aria-label="${label}">${inner}</svg>`;
+const gColor=g=>`var(--g${g})`;
+function polar(cx,cy,r,a){return [cx+r*Math.cos(a),cy-r*Math.sin(a)];}
+
+function gaugeSVG(score){
+  const cx=160,cy=160,R=125,ang=s=>Math.PI*(1-(s-300)/550);
+  const seg=[[300,520,'E'],[520,600,'D'],[600,680,'C'],[680,750,'B'],[750,850,'A']];
+  let s='';
+  for(const [a,b,g] of seg){const [x1,y1]=polar(cx,cy,R,ang(a)+0.006),[x2,y2]=polar(cx,cy,R,ang(b)-0.006);
+    s+=`<path d="M${x1} ${y1} A${R} ${R} 0 0 1 ${x2} ${y2}" style="fill:none;stroke:${gColor(g)};stroke-width:20;opacity:.9"/>`;
+    const [lx,ly]=polar(cx,cy,R-30,ang((a+b)/2));s+=`<text x="${lx}" y="${ly+4}" text-anchor="middle" style="fill:${gColor(g)};font-size:12px;font-weight:700">${g}</text>`;}
+  for(const t of [300,520,600,680,750,850]){const [x,y]=polar(cx,cy,R+18,ang(t));s+=`<text x="${x}" y="${y+4}" text-anchor="middle" class="num" style="fill:var(--faint);font-size:10.5px">${t}</text>`;}
+  const a=ang(score),[nx,ny]=polar(cx,cy,R-42,a);
+  s+=`<g id="needle" style="transition:transform .9s cubic-bezier(.3,1.4,.5,1);transform-origin:${cx}px ${cy}px"><line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" style="stroke:var(--text);stroke-width:4;stroke-linecap:round"/></g>`;
+  s+=`<circle cx="${cx}" cy="${cy}" r="9" style="fill:var(--accent)"/>`;
+  return svg(320,175,s,'信用分數儀表');
+}
+
+function radarSVG(x){
+  const cx=170,cy=150,R=105,N=FEATURES.length;
+  const val=F=>F.k==='f9'?1-x[F.k]:x[F.k], mval=F=>F.k==='f9'?1-F.mu:F.mu;
+  const pt=(i,v)=>polar(cx,cy,R*v,Math.PI/2-2*Math.PI*i/N);
+  let s='';
+  for(const r of [0.25,0.5,0.75,1]){s+=`<polygon points="${FEATURES.map((F,i)=>pt(i,r).join(',')).join(' ')}" style="fill:none;stroke:var(--line);stroke-width:1"/>`;}
+  FEATURES.forEach((F,i)=>{const [x2,y2]=pt(i,1);s+=`<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" style="stroke:var(--line)"/>`;
+    const [lx,ly]=pt(i,1.2);s+=`<text x="${lx}" y="${ly+4}" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">${F.short}</text>`;});
+  s+=`<polygon points="${FEATURES.map((F,i)=>pt(i,mval(F)).join(',')).join(' ')}" style="fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 3"/>`;
+  s+=`<polygon points="${FEATURES.map((F,i)=>pt(i,val(F)).join(',')).join(' ')}" style="fill:var(--accent);fill-opacity:.22;stroke:var(--accent);stroke-width:2"/>`;
+  FEATURES.forEach((F,i)=>{const [px,py]=pt(i,val(F));s+=`<circle cx="${px}" cy="${py}" r="3.5" style="fill:var(--accent)"/>`;});
+  return svg(340,300,s,'特徵雷達圖');
+}
+
+function waterfallSVG(sc){
+  const items=sc.contrib.slice().sort((a,b)=>Math.abs(b.pts)-Math.abs(a.pts));
+  const rows=[{label:'基準分數',type:'base',v:sc.base}];
+  let run=sc.base;
+  for(const c of items){rows.push({label:c.name,type:c.pts>=0?'pos':'neg',from:run,to:run+c.pts,pts:c.pts});run+=c.pts;}
+  if(Math.abs(sc.clampAdj)>0.5){rows.push({label:'分數上下限調整',type:'neg',from:run,to:run+sc.clampAdj,pts:sc.clampAdj});run+=sc.clampAdj;}
+  rows.push({label:'最終分數',type:'total',v:sc.score});
+  const vals=[sc.base,sc.score];rows.forEach(r=>{if(r.from!=null)vals.push(r.from,r.to);});
+  const lo=Math.floor((Math.min(...vals)-25)/10)*10,hi=Math.ceil((Math.max(...vals)+25)/10)*10;
+  const W=680,L=118,Rm=62,rh=27,top=8,H=top+rows.length*rh+26;
+  const X=v=>L+(v-lo)/(hi-lo)*(W-L-Rm);
+  let s='';
+  const ticks=5;for(let i=0;i<=ticks;i++){const v=Math.round(lo+(hi-lo)*i/ticks);const x=X(v);s+=`<line x1="${x}" y1="${top}" x2="${x}" y2="${H-22}" style="stroke:var(--line);stroke-dasharray:2 4"/><text x="${x}" y="${H-6}" text-anchor="middle" class="num" style="fill:var(--faint);font-size:10.5px">${v}</text>`;}
+  rows.forEach((r,i)=>{
+    const y=top+i*rh;
+    s+=`<text x="${L-10}" y="${y+rh/2+4}" text-anchor="end" style="fill:${r.type==='total'||r.type==='base'?'var(--text)':'var(--muted)'};font-size:12.5px;font-weight:${r.type==='total'?700:500}">${r.label}</text>`;
+    if(r.type==='base'||r.type==='total'){
+      const x2=X(r.v);s+=`<rect x="${L}" y="${y+5}" width="${Math.max(1,x2-L)}" height="${rh-10}" rx="4" style="fill:${r.type==='total'?'var(--accent)':'var(--line2)'}"/>`;
+      s+=`<text x="${x2+6}" y="${y+rh/2+4}" class="num" style="fill:var(--text);font-size:12px;font-weight:700">${Math.round(r.v)}</text>`;
+    }else{
+      const a=X(Math.min(r.from,r.to)),b=X(Math.max(r.from,r.to));
+      s+=`<rect x="${a}" y="${y+5}" width="${Math.max(1.5,b-a)}" height="${rh-10}" rx="3" style="fill:${r.type==='pos'?'var(--good)':'var(--bad)'}"/>`;
+      s+=`<text x="${b+6}" y="${y+rh/2+4}" class="num" style="fill:${r.type==='pos'?'var(--good)':'var(--bad)'};font-size:12px;font-weight:600">${sgn(r.pts)}</text>`;
+    }
+    if(i<rows.length-1){const nv=r.to!=null?r.to:r.v;const x=X(nv);s+=`<line x1="${x}" y1="${y+rh-5}" x2="${x}" y2="${y+rh+5}" style="stroke:var(--faint);stroke-dasharray:2 2"/>`;}
+  });
+  return svg(W,H,s,'特徵貢獻瀑布圖');
+}
+
+function monthlySVG(monthly){
+  const W=680,H=250,L=48,R=10,T=14,B=30;
+  const max=Math.max(...monthly.map(m=>Math.max(m.inflow,m.outflow)))*1.12;
+  const n=monthly.length,slot=(W-L-R)/Math.max(n,6),bw=Math.min(16,slot*0.32);
+  const Y=v=>T+(1-v/max)*(H-T-B);
+  let s='';
+  for(let i=0;i<=4;i++){const v=max*i/4,y=Y(v);s+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" style="stroke:var(--line);stroke-dasharray:${i?'2 4':'0'}"/><text x="${L-6}" y="${y+4}" text-anchor="end" class="num" style="fill:var(--faint);font-size:10.5px">${Math.round(v/1e4)}</text>`;}
+  s+=`<text x="${L-6}" y="${T-2}" text-anchor="end" style="fill:var(--faint);font-size:10px">萬聰</text>`;
+  monthly.forEach((m,i)=>{
+    const cx=L+slot*(i+0.5);
+    s+=`<rect x="${cx-bw-1}" y="${Y(m.inflow)}" width="${bw}" height="${H-B-Y(m.inflow)}" rx="3" style="fill:var(--good)"><title>${m.label.text} 收入 ${sats(m.inflow)}</title></rect>`;
+    s+=`<rect x="${cx+1}" y="${Y(m.outflow)}" width="${bw}" height="${H-B-Y(m.outflow)}" rx="3" style="fill:var(--bad);opacity:.8"><title>${m.label.text} 支出 ${sats(m.outflow)}</title></rect>`;
+    s+=`<text x="${cx}" y="${H-10}" text-anchor="middle" style="fill:var(--muted);font-size:11px">${m.label.short}</text>`;
+  });
+  return svg(W,H,s,'每月收支長條圖');
+}
+
+function historySVG(hist){
+  const W=680,H=230,L=40,R=16,T=12,B=28;
+  const pts=hist.length?hist:[{month:S.month,score:0}];
+  const sc=pts.map(p=>p.score);
+  let lo=Math.max(300,Math.floor((Math.min(...sc)-50)/10)*10),hi=Math.min(850,Math.ceil((Math.max(...sc)+50)/10)*10);
+  const m0=pts[0].month,m1=Math.max(pts[pts.length-1].month,m0+6);
+  const X=m=>L+(m-m0)/(m1-m0)*(W-L-R),Y=v=>T+(1-(v-lo)/(hi-lo))*(H-T-B);
+  let s='';
+  for(const G of GRADES){if(G.min>lo&&G.min<hi){const y=Y(G.min);s+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" style="stroke:${gColor(G.g)};stroke-dasharray:5 4;opacity:.6"/><text x="${W-R}" y="${y-4}" text-anchor="end" style="fill:${gColor(G.g)};font-size:10.5px;font-weight:700">${G.g} 級 ${G.min}</text>`;}}
+  for(let i=0;i<=3;i++){const v=Math.round(lo+(hi-lo)*i/3);s+=`<text x="${L-6}" y="${Y(v)+4}" text-anchor="end" class="num" style="fill:var(--faint);font-size:10.5px">${v}</text>`;}
+  for(let m=m0;m<=m1;m++){s+=`<text x="${X(m)}" y="${H-8}" text-anchor="middle" style="fill:var(--faint);font-size:10.5px">${monthLabel(m).tiny}</text>`;}
+  if(hist.length){
+    const d=hist.map((p,i)=>`${i?'L':'M'}${X(p.month)} ${Y(p.score)}`).join(' ');
+    s+=`<path d="${d} L${X(hist[hist.length-1].month)} ${H-B} L${X(hist[0].month)} ${H-B} Z" style="fill:var(--accent);opacity:.1"/>`;
+    s+=`<path d="${d}" style="fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round"/>`;
+    hist.forEach(p=>{s+=`<circle cx="${X(p.month)}" cy="${Y(p.score)}" r="4.5" style="fill:var(--panel);stroke:${gColor(gradeOf(p.score).g)};stroke-width:2.5"><title>${monthLabel(p.month).text}：${p.score}</title></circle>`;});
+    const last=hist[hist.length-1];s+=`<text x="${X(last.month)}" y="${Y(last.score)-11}" text-anchor="middle" class="num" style="fill:var(--text);font-size:12px;font-weight:700">${last.score}</text>`;
+  }
+  return svg(W,H,s,'分數變化折線圖');
+}
+
+function kinkSVG(u){
+  const W=520,H=270,L=44,R=14,T=14,B=34,ymax=0.5;
+  const X=v=>L+v*(W-L-R),Y=v=>T+(1-v/ymax)*(H-T-B);
+  let s='';
+  for(let i=0;i<=5;i++){const v=ymax*i/5;s+=`<line x1="${L}" y1="${Y(v)}" x2="${W-R}" y2="${Y(v)}" style="stroke:var(--line);stroke-dasharray:${i?'2 4':'0'}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end" class="num" style="fill:var(--faint);font-size:10.5px">${Math.round(v*100)}%</text>`;}
+  for(let i=0;i<=5;i++){const v=i/5;s+=`<text x="${X(v)}" y="${H-16}" text-anchor="middle" class="num" style="fill:var(--faint);font-size:10.5px">${v*100}%</text>`;}
+  s+=`<text x="${(L+W-R)/2}" y="${H-2}" text-anchor="middle" style="fill:var(--muted);font-size:11px">資金使用率</text>`;
+  s+=`<line x1="${X(0.8)}" y1="${T}" x2="${X(0.8)}" y2="${H-B}" style="stroke:var(--warn);stroke-dasharray:4 4"/><text x="${X(0.8)-4}" y="${T+12}" text-anchor="end" style="fill:var(--warn);font-size:11px">最佳使用率 80%</text>`;
+  let d='',d2='';for(let i=0;i<=100;i++){const v=i/100;d+=`${i?'L':'M'}${X(v)} ${Y(kink(v))}`;d2+=`${i?'L':'M'}${X(v)} ${Y(kink(v)*v*0.9)}`;}
+  s+=`<path d="${d}" style="fill:none;stroke:var(--accent);stroke-width:2.5"/>`;
+  s+=`<path d="${d2}" style="fill:none;stroke:var(--info);stroke-width:2;stroke-dasharray:6 3"/>`;
+  const uu=clamp(u,0,1);
+  s+=`<line x1="${X(uu)}" y1="${Y(kink(uu))}" x2="${X(uu)}" y2="${H-B}" style="stroke:var(--text);stroke-dasharray:2 3;opacity:.5"/>`;
+  s+=`<circle cx="${X(uu)}" cy="${Y(kink(uu))}" r="6" style="fill:var(--accent);stroke:var(--panel);stroke-width:2"/>`;
+  s+=`<text x="${X(uu)+9}" y="${Y(kink(uu))-8}" style="fill:var(--text);font-size:12px;font-weight:700">目前 ${pct(uu,1)}</text>`;
+  return svg(W,H,s,'利率模型曲線');
+}
+
+function donutSVG(b){
+  const total=Object.values(b).reduce((a,c)=>a+c,0)||1,cx=110,cy=110,R=82,w=28;
+  let s='',a0=Math.PI/2;
+  for(const g of ['A','B','C','D']){const frac=b[g]/total;if(frac<=0)continue;const a1=a0-frac*2*Math.PI;
+    const [x1,y1]=polar(cx,cy,R,a0),[x2,y2]=polar(cx,cy,R,a1+0.004);const large=frac>0.5?1:0;
+    s+=`<path d="M${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2}" style="fill:none;stroke:${gColor(g)};stroke-width:${w}"><title>${g} 級 ${pct(frac)}</title></path>`;a0=a1;}
+  s+=`<text x="${cx}" y="${cy-4}" text-anchor="middle" style="fill:var(--muted);font-size:12px">總借出</text><text x="${cx}" y="${cy+18}" text-anchor="middle" class="num" style="fill:var(--text);font-size:17px;font-weight:700">${(total/1e6).toFixed(1)}M</text><text x="${cx}" y="${cy+34}" text-anchor="middle" style="fill:var(--faint);font-size:10.5px">百萬聰</text>`;
+  return svg(220,220,s,'資金配置甜甜圈圖');
+}
+
+/* =========================================================
+   八、共用 UI
+   ========================================================= */
+function toast(msg,kind=''){const t=document.createElement('div');t.className='toast '+kind;t.innerHTML=msg;$('#toasts').appendChild(t);setTimeout(()=>{t.style.transition='.4s';t.style.opacity='0';t.style.transform='translateX(30px)';},3600);setTimeout(()=>t.remove(),4100);}
+function openModal(html){$('#modalRoot').innerHTML=`<div class="modalBg" id="modalBg"><div class="modal">${html}</div></div>`;}
+function closeModal(){$('#modalRoot').innerHTML='';}
+function countUp(el,to,dur=900){if(!el)return;const t0=performance.now();const from=300;function f(t){const k=Math.min(1,(t-t0)/dur);const e=1-Math.pow(1-k,3);el.textContent=Math.round(from+(to-from)*e);if(k<1)requestAnimationFrame(f);}requestAnimationFrame(f);}
+function emptyState(icon,text){return `<div class="card empty"><div class="ei">${icon}</div><p>${text}</p><button class="btn primary" data-go="score">前往信用評分</button></div>`;}
+
+function renderHeader(){
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id==='page-'+S.tab));
+  $('#dateChip').innerHTML=`📅 模擬日期 <b>${monthLabel(S.month).text}</b>`;
+  const id=cur();
+  if(id&&per(id).analyzed){const sc=scoreFor(id);$('#personaChip').innerHTML=`${PERSONAS[id].flag} ${PERSONAS[id].name} ${gbadge(sc.grade.g,'sm')} <span class="num">${sc.score}</span>`;}
+  else if(id&&per(id).connected){$('#personaChip').innerHTML=`${PERSONAS[id].flag} ${PERSONAS[id].name} <span class="muted">尚未評分</span>`;}
+  else $('#personaChip').innerHTML=`<span class="muted">尚未連接錢包</span>`;
+  $('#themeBtn').textContent=S.theme==='dark'?'☀️ 淺色':'🌙 深色';
+  document.documentElement.dataset.theme=S.theme;
+}
+function render(){renderHeader();({score:renderScore,loan:renderLoan,lend:renderLend,zk:renderZK})[S.tab]();}
+
+/* =========================================================
+   九、信用評分頁
+   ========================================================= */
+function renderScore(){
+  const id=cur();
+  $('#personaGrid').innerHTML=PERSONA_ORDER.map(pid=>{const p=PERSONAS[pid],P=S.per[pid];
+    const tag=P&&P.analyzed?gbadge(scoreFor(pid).grade.g,'sm'):(P&&P.connected?'<span class="pill">已連接</span>':'');
+    return `<button class="pcard ${pid===id?'on':''}" data-persona="${pid}"><span class="ptag">${tag}</span><div class="flag">${p.flag}</div><div class="pn">${p.name}</div><div class="pt">${p.title}${p.custom?'':'・'+p.place}</div><div class="pb">${p.blurb}</div></button>`;}).join('');
+  if(!id){$('#connectBox').innerHTML='';$('#dataSection').innerHTML='';$('#aiSection').innerHTML='';$('#resultSection').innerHTML='';return;}
+  const P=per(id),p=PERSONAS[id];
+  if(UI.connecting)return;
+  $('#connectBox').innerHTML=P.connected?`<div class="connect row"><span class="pill good">● 已連接</span><span class="muted">錢包地址</span><span class="addr">${addressOf(id)}</span><span class="spacer"></span><span class="muted">餘額</span><b class="num">${sats(P.wallet)}</b><span class="faint" style="font-size:12px">${usd(P.wallet)}（模擬匯率）</span></div>`:'';
+  renderData(id);
+  renderAI(id,false);
+  renderResult(id);
+}
+
+async function connectPersona(id){
+  if(UI.connecting||UI.analyzing)return;
+  S.persona=id;const P=per(id);save();
+  if(P.connected){render();return;}
+  UI.connecting=true;renderHeader();
+  $('#personaGrid').querySelectorAll('.pcard').forEach(c=>c.classList.toggle('on',c.dataset.persona===id));
+  $('#dataSection').innerHTML='';$('#aiSection').innerHTML='';$('#resultSection').innerHTML='';
+  const box=$('#connectBox');const d=PERSONAS[id].custom?null:dataOf(id);
+  const steps=['正在搜尋錢包…','正在連接閃電網路節點…',d?`正在同步交易紀錄（${fmt(d.tx.length)} 筆）…`:'正在載入自訂特徵…'];
+  box.innerHTML='<div class="connect" id="cl"></div>';
+  for(const t of steps){const el=document.createElement('div');el.className='cl';el.innerHTML=`<span class="spin"></span> ${t}`;$('#cl').appendChild(el);await sleep(420);el.innerHTML=`<span class="good">✓</span> ${t.replace('…','')}`;}
+  await sleep(200);
+  P.connected=true;UI.connecting=false;save();render();
+}
+
+function renderData(id){
+  const P=per(id),p=PERSONAS[id];
+  if(!P.connected){$('#dataSection').innerHTML='';return;}
+  let html='';
+  if(p.custom){
+    html=`<div class="card"><div class="chead"><div><h2><span class="step">2</span>調整特徵</h2><p class="muted">自訂角色沒有交易紀錄，請直接設定九個特徵值（0 到 1）。分析後拖動滑桿，結果會即時更新。</p></div><button class="btn sm" id="customResetBtn">恢復預設值</button></div>
+      <div class="sliders">${FEATURES.map(F=>`<div class="slider"><div class="top"><span>${F.name}</span><b id="sv-${F.k}">${P.custom[F.k].toFixed(2)}</b></div><input type="range" min="0" max="1" step="0.01" value="${P.custom[F.k]}" data-feat="${F.k}"><div class="fd">${F.desc}</div></div>`).join('')}</div>
+      ${actionRow(id)}</div>`;
+  }else{
+    const d=dataOf(id),t=txFeatures(id),st=t.stats;
+    const recent=d.tx.slice(-14).reverse();
+    html=`<div class="card"><div class="chead"><div><h2><span class="step">2</span>交易資料分析</h2><p class="muted">${p.flag} ${p.name}・${p.title}・${p.place}</p></div></div>
+      <div class="grid g21">
+        <div><h3 class="muted" style="font-size:13px;font-weight:600">近 ${d.months} 個月收支</h3>${monthlySVG(d.monthly)}
+          <div class="legend"><span><i style="background:var(--good)"></i>收入（流入）</span><span><i style="background:var(--bad)"></i>支出（流出）</span></div></div>
+        <div class="stats">
+          <div class="stat"><div class="l">帳戶年齡</div><div class="v">${p.ageMonths} 個月</div></div>
+          <div class="stat"><div class="l">交易筆數</div><div class="v">${fmt(st.total)}</div><div class="s">月均 ${fmt(st.avgCount)} 筆</div></div>
+          <div class="stat"><div class="l">月均收入</div><div class="v">${fmt(st.avgIn)}</div><div class="s">聰・${usd(st.avgIn)}</div></div>
+          <div class="stat"><div class="l">月均支出</div><div class="v">${fmt(st.avgOut)}</div><div class="s">聰・${usd(st.avgOut)}</div></div>
+          <div class="stat"><div class="l">收款對象</div><div class="v">${fmt(st.cpCount)} 位</div></div>
+          <div class="stat"><div class="l">準時繳費</div><div class="v">${t.billOn} / ${t.billTotal}</div><div class="s">期</div></div>
+          <div class="stat"><div class="l">借款紀錄</div><div class="v" style="font-size:14px;font-family:inherit">${p.pastText}</div></div>
+          <div class="stat"><div class="l">社群擔保人</div><div class="v">${p.vouches} 位</div></div>
+        </div>
+      </div>
+      <h3 class="muted mt" style="font-size:13px;font-weight:600">最近交易</h3>
+      <div class="txlist">${recent.map(x=>`<div class="tx"><div class="ic ${x.type}">${x.type==='in'?'↓':x.type==='bill'?'⚡':'↑'}</div><div><div>${x.cat}・${x.cp}${x.late?' <span class="pill warn">逾期繳納</span>':''}</div><div class="faint" style="font-size:12px">${x.y}/${x.m}/${x.d}</div></div><div class="amt ${x.type==='in'?'good':'bad'}">${x.type==='in'?'+':'−'}${fmt(x.amt)} 聰</div></div>`).join('')}</div>
+      ${actionRow(id)}</div>`;
+  }
+  $('#dataSection').innerHTML=html;
+}
+function actionRow(id){const P=per(id);return `<div class="row mt2"><button class="btn primary" id="runAIBtn" ${UI.analyzing?'disabled':''}>🤖 ${P.analyzed?'重新執行 AI 分析':'開始 AI 信用分析'}</button><span class="muted" style="font-size:13px">模型在瀏覽器內即時計算，不會上傳任何資料。</span></div>`;}
+
+function featDetail(id,F,x){
+  const p=PERSONAS[id];
+  if(p.custom)return F.k==='f6'&&repayTotal(per(id).hist)?`滑桿值結合 ${repayTotal(per(id).hist)} 次平台還款紀錄`:'由滑桿設定';
+  const t=txFeatures(id),st=t.stats,h=histOf(id),v=x[F.k].toFixed(3);
+  switch(F.k){
+    case 'f1':return `${p.ageMonths} 個月 ÷ 24 → ${v}`;
+    case 'f2':return `月均 ${fmt(st.avgCount)} 筆 ÷ 300 → ${v}`;
+    case 'f3':return `月收入變異係數 ${st.cv.toFixed(2)}${st.months<6?`，僅 ${st.months} 個月資料，向 0.5 收斂`:''} → ${v}`;
+    case 'f4':return `${st.cpCount} 位收款對象，資訊熵 ${st.H.toFixed(2)} ÷ ${Math.log(500).toFixed(2)} → ${v}`;
+    case 'f5':return `（${fmt(st.tin)} − ${fmt(st.tout)}）÷ ${fmt(st.tin)} → ${v}`;
+    case 'f6':return `準時 ${h.onTime}、逾期 ${h.late}、違約 ${h.def} 次 → ${v}`;
+    case 'f7':return `${p.vouches} 位擔保人 ÷ 5 → ${v}`;
+    case 'f8':return `準時繳費 ${t.billOn} / ${t.billTotal} 期 → ${v}`;
+    case 'f9':return per(id).hist.def?`平台違約紀錄 ${per(id).hist.def} 次 × 0.25 → ${v}`:'未偵測到高風險地址互動 → 0.000';
+  }
+}
+function renderAI(id,animated){
+  const P=per(id);
+  if(!P.analyzed&&!animated){$('#aiSection').innerHTML='';return;}
+  const x=featuresOf(id),sc=scoreOf(x);
+  const rows=FEATURES.map((F,i)=>`<div class="feat ${animated?'':'done'}" id="feat-${F.k}"><div><div class="fn">F${i+1}　${F.name}</div></div><div><div class="track ${F.beta<0?'neg':''}"><i style="width:${animated?0:x[F.k]*100}%"></i></div><div class="fd" style="margin-top:4px">${animated?F.desc:featDetail(id,F,x)}</div></div><div class="fv">${animated?'—':x[F.k].toFixed(3)}</div></div>`).join('');
+  const zs=FEATURES.map(F=>`${F.beta.toFixed(2)}×${x[F.k].toFixed(2)}`).join(' + ');
+  $('#aiSection').innerHTML=`<div class="card"><div class="chead"><div><h2><span class="step">3</span>AI 特徵萃取與計分</h2><p class="muted">從交易紀錄萃取九個特徵，正規化到 0–1 後輸入邏輯迴歸計分卡。</p></div><span class="pill acc" id="aiStatus">${animated?'<span class="spin"></span> 分析中':'✓ 分析完成'}</span></div>
+    ${rows}
+    <div class="formula mt ${animated?'hidden':''}" id="formulaBox">
+      z = ${BETA0} + ${zs.replace(/\+ -/g,'− ')}<br>
+      &nbsp;&nbsp;= <b>${sc.z.toFixed(3)}</b>　→　良好還款機率 P = 1 ÷ (1 + e<sup>−z</sup>) = <b>${pct(sc.P,2)}</b><br>
+      分數 = ${OFFSET.toFixed(1)} + ${FACTOR.toFixed(2)} × ln(勝算 ${(sc.P/(1-sc.P)).toFixed(1)}) = <b class="acc">${sc.score}</b>　（每差 ${PDO} 分，勝算翻倍）
+    </div></div>`;
+}
+async function runAI(){
+  const id=cur();if(!id||UI.analyzing)return;
+  UI.analyzing=true;const P=per(id);
+  $('#resultSection').innerHTML='';
+  renderData(id);renderAI(id,true);
+  $('#aiSection').scrollIntoView({behavior:'smooth',block:'start'});
+  await sleep(450);
+  const x=featuresOf(id);
+  for(const F of FEATURES){
+    const row=$('#feat-'+F.k);row.classList.add('run');
+    await sleep(140);
+    row.querySelector('.track i').style.width=(x[F.k]*100)+'%';
+    row.querySelector('.fd').textContent=featDetail(id,F,x);
+    row.querySelector('.fv').textContent=x[F.k].toFixed(3);
+    row.classList.add('done');
+    await sleep(190);
+  }
+  $('#formulaBox').classList.remove('hidden');
+  $('#aiStatus').innerHTML='✓ 分析完成';
+  await sleep(350);
+  const first=!P.analyzed;
+  P.analyzed=true;UI.analyzing=false;
+  const sc=scoreFor(id);
+  if(first||!P.scoreHist.length)P.scoreHist=[{month:S.month,score:sc.score}];
+  else{const last=P.scoreHist[P.scoreHist.length-1];if(last.month===S.month)last.score=sc.score;else P.scoreHist.push({month:S.month,score:sc.score});}
+  save();UI.revealed[id]=false;
+  renderData(id);renderResult(id);renderHeader();
+  $('#personaGrid').innerHTML&&renderScoreGridOnly();
+  setTimeout(()=>$('#resultSection').scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+function renderScoreGridOnly(){const id=cur();$('#personaGrid').querySelectorAll('.pcard').forEach(c=>{const pid=c.dataset.persona,P=S.per[pid];c.querySelector('.ptag').innerHTML=P&&P.analyzed?gbadge(scoreFor(pid).grade.g,'sm'):(P&&P.connected?'<span class="pill">已連接</span>':'');c.classList.toggle('on',pid===id);});}
+
+function suggestions(id){
+  const sc=scoreFor(id),G=sc.grade,N=nextGrade(G),out=[];
+  if(PERSONAS[id].custom){
+    const x=featuresOf(id);
+    const gains=FEATURES.map(F=>{const step=F.beta>0?Math.min(0.1,1-x[F.k]):-Math.min(0.1,x[F.k]);return {F,step,pts:FACTOR*F.beta*step};}).filter(g=>g.pts>0.5).sort((a,b)=>b.pts-a.pts).slice(0,4);
+    return gains.map(g=>({i:'🎚️',t:`把「${g.F.name}」${g.step>0?'提高':'降低'} ${Math.abs(g.step).toFixed(2)}，分數約 <b class="good">+${g.pts.toFixed(0)}</b> 分`}));
+  }
+  if(!N){out.push({i:'🏆',t:'已達最高的 A 級。持續準時還款、維持儲蓄習慣，就能保住目前的優惠條件。'});}
+  const target=N?N.min:null;
+  const p=PERSONAS[id],h=histOf(id),t=txFeatures(id);
+  const test=o=>scoreOf(featuresOf(id,o)).score;
+  // 還款
+  let n1=null;if(N)for(let n=1;n<=24;n++){if(test({hist:{...h,onTime:h.onTime+n}})>=target){n1=n;break;}}
+  const g1=test({hist:{...h,onTime:h.onTime+1}})-sc.score;
+  if(n1)out.push({i:'✅',t:`再準時還款 <b>${n1}</b> 次，可升到 ${gbadge(N.g,'sm')} 級（每次約 <span class="good">+${g1}</span> 分）`});
+  else if(g1>0)out.push({i:'✅',t:`每多 1 次準時還款，分數約 <b class="good">+${g1}</b> 分`});
+  // 擔保
+  if(p.vouches<5){let n2=null;if(N)for(let n=1;n<=5-p.vouches;n++){if(test({vouches:p.vouches+n})>=target){n2=n;break;}}
+    const g2=test({vouches:p.vouches+1})-sc.score;
+    if(n2)out.push({i:'🤝',t:`再邀請 <b>${n2}</b> 位社群擔保人，可升到 ${gbadge(N.g,'sm')} 級`});
+    else if(g2>0)out.push({i:'🤝',t:`每多 1 位社群擔保人，分數約 <b class="good">+${g2}</b> 分`});}
+  // 儲蓄
+  if(N){let f5=null;for(let v=Math.ceil(t.f5*100)+1;v<=60;v++){if(test({f5:v/100})>=target){f5=v/100;break;}}
+    if(f5)out.push({i:'🐷',t:`把儲蓄率從 ${pct(t.f5,0)} 提高到 <b>${pct(f5,0)}</b>，可升到 ${gbadge(N.g,'sm')} 級`});}
+  // 繳費
+  let n4=null;if(N)for(let n=1;n<=12;n++){if(test({billExtra:n})>=target){n4=n;break;}}
+  if(n4)out.push({i:'⚡',t:`再準時繳費 <b>${n4}</b> 期，可升到 ${gbadge(N.g,'sm')} 級`});
+  else{const g4=test({billExtra:3})-sc.score;if(g4>0)out.push({i:'⚡',t:`連續 3 期準時繳納話費與電費，分數約 <b class="good">+${g4}</b> 分`});}
+  return out.slice(0,4);
+}
+
+function renderResult(id){
+  const P=per(id);
+  if(!P.analyzed||UI.analyzing){$('#resultSection').innerHTML='';return;}
+  const x=featuresOf(id),sc=scoreOf(x),G=sc.grade,N=nextGrade(G);
+  const sorted=sc.contrib.slice().sort((a,b)=>b.pts-a.pts);
+  const pos=sorted.filter(c=>c.pts>0.5).slice(0,2),neg=sorted.filter(c=>c.pts<-0.5).reverse().slice(0,2);
+  const notable=FEATURES.filter(F=>F.k!=='f9').map(F=>({F,p:percentile(x[F.k],F.mu)})).sort((a,b)=>b.p-a.p);
+  const best=notable[0],worst=notable[notable.length-1];
+  const reveal=!UI.revealed[id];
+  $('#resultSection').innerHTML=`<div class="card"><div class="chead"><div><h2><span class="step">4</span>信用評分結果</h2><p class="muted">分數範圍 300–850，越高代表違約風險越低。</p></div>
+      <div class="row"><button class="btn sm" data-go="loan">前往借貸池 →</button><button class="btn sm" data-go="zk">產生隱私證明 →</button></div></div>
+    <div class="grid g3">
+      <div class="gaugeWrap">${gaugeSVG(sc.score)}
+        <div class="bigscore"><span class="num" style="font-size:46px;font-weight:800" id="scoreNum">${reveal?300:sc.score}</span>${gbadge(G.g,'lg')}</div>
+        <div class="prob"><span class="pill good">良好還款機率 ${pct(sc.P,1)}</span><span class="pill bad">預估違約機率 ${pct(1-sc.P,1)}</span></div>
+        <div class="muted mt" style="font-size:13px">${N?`距離 ${N.g} 級還差 <b class="acc num">${N.min-sc.score}</b> 分`:'已達最高等級'}</div>
+      </div>
+      <div><h3 class="muted" style="font-size:13px;font-weight:600;text-align:center">特徵輪廓</h3>${radarSVG(x)}
+        <div class="legend" style="justify-content:center"><span><i style="background:var(--accent)"></i>${PERSONAS[id].name}</span><span><i style="background:transparent;border:1.5px dashed var(--muted)"></i>平台用戶平均</span></div></div>
+      <div>
+        <h3 style="margin-bottom:10px">借款條件（${G.g} 級）</h3>
+        ${G.apr==null?`<p class="bad" style="margin:0 0 10px">分數低於 520，暫時無法申請信用借貸，僅能使用 200% 純抵押借款。</p>`:''}
+        <dl class="kv"><dt>抵押率</dt><dd>${pct(G.coll,0)}</dd><dt>年利率</dt><dd>${G.apr==null?'—':pct(loanAPR(G),1)}</dd><dt>額度上限</dt><dd>${G.limit?sats(G.limit):'—'}</dd><dt>違約機率參考</dt><dd>${pct(G.pd,1)}／年</dd></dl>
+        <div class="tablewrap mt"><table class="t"><thead><tr><th>等級</th><th>分數</th><th class="r">抵押率</th><th class="r">年利率</th></tr></thead><tbody>
+        ${GRADES.map(g=>`<tr class="${g===G?'hl':''}"><td>${gbadge(g.g,'sm')}</td><td class="num">${g.g==='A'?'750+':g.g==='E'?'< 520':g.min+'–'+(GRADES[GRADES.indexOf(g)-1].min-1)}</td><td class="r num">${pct(g.coll,0)}</td><td class="r num">${g.apr==null?'—':pct(g.apr,0)}</td></tr>`).join('')}
+        </tbody></table></div>
+      </div>
+    </div></div>
+    <div class="grid g21">
+      <div class="card"><div class="chead"><div><h2>特徵貢獻瀑布圖</h2><p class="muted">從平台平均的基準分數出發，每個特徵相對平均值加分（綠）或扣分（紅），加總即為最終分數。</p></div></div>${waterfallSVG(sc)}</div>
+      <div class="card explain"><h2 style="margin-bottom:12px">白話解釋</h2>
+        <p>${PERSONAS[id].name}的信用分數為 <b class="acc">${sc.score}</b> 分，屬於 ${gbadge(G.g,'sm')} 級。</p>
+        <ul>
+          ${pos.length?`<li>加分最多：${pos.map(c=>`${c.name}（<span class="good">${sgn(c.pts,0)}</span>）`).join('、')}</li>`:''}
+          ${neg.length?`<li>扣分最多：${neg.map(c=>`${c.name}（<span class="bad">${sgn(c.pts,0)}</span>）`).join('、')}</li>`:''}
+          <li>${best.F.name}高於 <b>${best.p}%</b> 的平台用戶。</li>
+          <li>相對較弱的是${worst.F.name}，高於 <b>${worst.p}%</b> 的平台用戶。</li>
+          ${x.f9>0?`<li class="bad">偵測到風險訊號（${x.f9.toFixed(2)}），比平均扣 ${Math.abs(sc.contrib[8].pts).toFixed(0)} 分。</li>`:''}
+        </ul>
+        <h3 class="mt2" style="margin-bottom:10px">如何提升分數</h3>
+        ${suggestions(id).map(s=>`<div class="sugg"><span class="si">${s.i}</span><span>${s.t}</span></div>`).join('')||'<p class="muted">目前沒有建議。</p>'}
+      </div>
+    </div>`;
+  if(reveal){UI.revealed[id]=true;const needle=$('#needle');if(needle){const a=(sc.score-300)/550*180;needle.style.transform=`rotate(${-a}deg)`;needle.getBoundingClientRect();requestAnimationFrame(()=>{needle.style.transform='rotate(0deg)';});}countUp($('#scoreNum'),sc.score);}
+}
+
+/* =========================================================
+   十、借貸池頁
+   ========================================================= */
+function outstanding(id){return per(id).loans.filter(L=>L.status==='active').reduce((s,L)=>s+L.remaining,0);}
+function defaultForm(id){const G=scoreFor(id).grade;const room=Math.max(0,Math.min(G.limit-outstanding(id),available()));const amt=Math.max(10000,Math.round(Math.min(room,G.limit*0.4)/10000)*10000);return {pid:id,amount:amt,term:6,collateral:Math.round(amt*G.coll),touched:false};}
+
+function renderLoan(){
+  const id=cur(),root=$('#page-loan');
+  if(!id||!per(id).analyzed){root.innerHTML=emptyState('🏦','請先在「信用評分」頁連接錢包並完成 AI 分析，才能查看你的借款條件。');return;}
+  const P=per(id),p=PERSONAS[id],sc=scoreFor(id),G=sc.grade;
+  if(!UI.loanForm||UI.loanForm.pid!==id)UI.loanForm=defaultForm(id);
+  const f=UI.loanForm,apr=loanAPR(G),adj=marketAdj(util());
+  const out=outstanding(id),room=Math.max(0,G.limit-out);
+  const maxAmt=Math.max(10000,Math.ceil(Math.max(G.limit,10000)/10000)*10000);
+  const active=P.loans.filter(L=>L.status==='active');
+  root.innerHTML=`
+  <div class="grid g12">
+    <div class="card">
+      <div class="chead"><h2>你的借款條件</h2><span class="pill">${p.flag} ${p.name}</span></div>
+      <div class="row" style="gap:16px">${gbadge(G.g,'lg')}<div><div class="muted" style="font-size:13px">信用分數</div><div class="num" style="font-size:32px;font-weight:800;line-height:1.1">${sc.score}</div></div></div>
+      <dl class="kv mt2">
+        <dt>抵押率</dt><dd>${pct(G.coll,0)}</dd>
+        <dt>年利率</dt><dd>${apr==null?'—':`${pct(apr,1)}`}</dd>
+        ${apr!=null?`<dt class="faint" style="font-size:12px">　等級利率＋市場調整</dt><dd class="faint" style="font-size:12px">${pct(G.apr,0)} + ${pct(adj,1)}</dd>`:''}
+        <dt>額度上限</dt><dd>${G.limit?sats(G.limit):'—'}</dd>
+        <dt>目前未償本金</dt><dd>${sats(out)}</dd>
+        <dt>剩餘可借額度</dt><dd class="acc">${sats(room)}</dd>
+        <dt>錢包餘額</dt><dd>${sats(P.wallet)}</dd>
+        <dt>資金池可用流動性</dt><dd>${sats(available())}</dd>
+      </dl>
+      <p class="faint" style="font-size:12px;margin:14px 0 0">抵押率低於 100% 的部分（A、B 級）由資金池的保險準備金承擔違約風險。</p>
+    </div>
+    <div class="card">
+      <div class="chead"><div><h2>借款試算</h2><p class="muted">調整金額與期數，按下申請後由智能合約自動審核，不經人工。</p></div></div>
+      <div class="grid g2" style="gap:24px">
+        <div>
+          <div class="field"><label><span>借款金額</span><span>上限 ${G.limit?sats(G.limit):'—'}</span></label>
+            <div class="inp"><input type="number" id="lfAmount" min="10000" step="10000" value="${f.amount}"><span>聰</span></div>
+            <input type="range" id="lfAmountR" min="10000" max="${maxAmt}" step="10000" value="${Math.min(f.amount,maxAmt)}"></div>
+          <div class="field"><label><span>還款期數</span></label><div class="seg" id="lfTerm">${[3,6,12].map(n=>`<button data-term="${n}" class="${f.term===n?'on':''}">${n} 個月</button>`).join('')}</div></div>
+          <div class="field"><label><span>抵押品</span><span id="lfCollHint"></span></label>
+            <div class="inp"><input type="number" id="lfColl" min="0" step="1000" value="${f.collateral}"><span>聰</span></div>
+            <span class="faint" style="font-size:12px">預設為最低所需抵押；可手動調低，測試審核失敗的情況。</span></div>
+        </div>
+        <div>
+          <dl class="kv" id="lfOut"></dl>
+          <button class="btn primary block mt2" id="applyBtn">📜 申請借款（智能合約自動審核）</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="chead"><div><h2>我的貸款</h2><p class="muted">${active.length?`進行中 ${active.length} 筆`:'目前沒有進行中的貸款'}</p></div></div>
+      ${P.loans.length?P.loans.slice().reverse().map(loanCard).join(''):'<p class="muted" style="margin:0">申請借款後，貸款會顯示在這裡。</p>'}
+      <h3 class="mt2" style="margin-bottom:6px">時間快轉</h3>
+      <p class="muted" style="font-size:13px;margin:0 0 10px">前進 1 個月，選擇這個月的還款行為。結果會回饋到「還款紀錄」特徵，分數隨之改變。</p>
+      <div class="ffwd">
+        <button class="btn good" data-ff="onTime" ${active.length?'':'disabled'}>✅ 準時還款<small>還款紀錄加分</small></button>
+        <button class="btn warn" data-ff="late" ${active.length?'':'disabled'}>⚠️ 逾期還款<small>加收 5% 罰金</small></button>
+        <button class="btn bad" data-ff="default" ${active.length?'':'disabled'}>❌ 違約<small>抵押品遭清算</small></button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="chead"><div><h2>分數變化</h2><p class="muted">每個月的還款結果都會重新計算分數。</p></div></div>
+      ${historySVG(P.scoreHist)}
+      <h3 class="mt" style="margin-bottom:6px">事件紀錄</h3>
+      <div class="events">${P.events.length?P.events.slice().reverse().map(e=>`<div class="ev"><span class="em">${monthLabel(e.month).text}</span><span>${e.text}</span></div>`).join(''):'<span class="muted">尚無事件。</span>'}</div>
+    </div>
+  </div>`;
+  updateLoanCalc();
+}
+function loanCard(L){
+  const st={active:'<span class="pill acc">還款中</span>',done:'<span class="pill good">已結清</span>',default:'<span class="pill bad">已違約</span>'}[L.status];
+  return `<div class="loan"><div class="lh"><div class="row">${gbadge(L.grade,'sm')}<b class="num">${sats(L.principal)}</b>${st}</div><span class="faint" style="font-size:12px">${monthLabel(L.start).text} 起・${L.term} 期</span></div>
+    <div class="progress"><i style="width:${L.paid/L.term*100}%;${L.status==='default'?'background:var(--bad)':''}"></i></div>
+    <dl class="kv"><dt>已還期數</dt><dd>${L.paid} / ${L.term}</dd><dt>每月還款</dt><dd>${sats(L.payment)}</dd><dt>剩餘本金</dt><dd>${sats(L.remaining)}</dd><dt>年利率・抵押品</dt><dd>${pct(L.apr,1)}・${sats(L.collateral)}</dd></dl></div>`;
+}
+function updateLoanCalc(){
+  const id=cur();if(!id||!$('#lfOut'))return;
+  const G=scoreFor(id).grade,f=UI.loanForm,apr=loanAPR(G);
+  const need=Math.round(f.amount*G.coll);
+  $('#lfCollHint').innerHTML=`最低所需 <b class="num">${sats(need)}</b>`;
+  if(apr==null){$('#lfOut').innerHTML=`<dt>狀態</dt><dd class="bad">E 級無法申請信用借貸</dd>`;return;}
+  const pay=monthlyPay(f.amount,apr,f.term),total=pay*f.term;
+  const recovery=f.collateral*0.95,gap=Math.max(0,f.amount-recovery);
+  $('#lfOut').innerHTML=`<dt>借款金額</dt><dd>${sats(f.amount)}</dd><dt></dt><dd class="faint" style="font-size:12px">${usd(f.amount)}</dd>
+    <dt>年利率</dt><dd>${pct(apr,1)}</dd><dt>每月還款</dt><dd class="acc">${sats(pay)}</dd><dt>總利息</dt><dd>${sats(total-f.amount)}</dd><dt>到期總還款</dt><dd>${sats(total)}</dd>
+    <dt>抵押品</dt><dd>${sats(f.collateral)}</dd><dt>實際抵押率</dt><dd class="${f.collateral<need?'bad':''}">${pct(f.collateral/f.amount,0)}</dd>
+    <dt>若首月即違約</dt><dd class="${gap>0?'warn':'good'}">${gap>0?`準備金需補 ${fmt(gap)} 聰`:'抵押品足以覆蓋'}</dd>`;
+}
+
+async function runAudit(){
+  const id=cur();if(UI.auditing)return;UI.auditing=true;
+  const P=per(id),sc=scoreFor(id),G=sc.grade,f={...UI.loanForm},x=featuresOf(id);
+  const need=Math.round(f.amount*G.coll),out=outstanding(id),avail=available(),apr=loanAPR(G);
+  const minScore=G.apr==null?520:G.min;
+  const salt=randHex(16),commit=hash64(`${sc.score}|${salt}`),proof=hash64(`${commit}|${minScore}|ok`);
+  const checks=[
+    {t:'零知識證明驗證：信用分數達到等級門檻',ok:sc.score>=520,okD:`證明 ${short(proof)} 驗證通過：分數 ≥ ${minScore}（實際分數不公開）`,noD:`無法產生有效證明：分數未達信用借貸最低門檻 520`},
+    {t:'借款金額不超過等級額度',ok:G.limit>0&&out+f.amount<=G.limit,okD:`未償 ${fmt(out)} ＋ 本次 ${fmt(f.amount)} ≤ 上限 ${fmt(G.limit)} 聰`,noD:G.limit?`未償 ${fmt(out)} ＋ 本次 ${fmt(f.amount)} ＞ 上限 ${fmt(G.limit)} 聰，超出 ${fmt(out+f.amount-G.limit)} 聰`:'E 級沒有信用借貸額度'},
+    {t:`抵押品達到所需抵押率 ${pct(G.coll,0)}`,ok:f.collateral>=need&&f.collateral<=P.wallet,okD:`抵押 ${fmt(f.collateral)} ≥ 所需 ${fmt(need)} 聰，已從錢包鎖定`,noD:f.collateral<need?`抵押品不足，還差 ${fmt(need-f.collateral)} 聰`:`錢包餘額 ${fmt(P.wallet)} 聰不足以鎖定 ${fmt(f.collateral)} 聰抵押品`},
+    {t:'風險訊號檢查',ok:x.f9<0.3,okD:x.f9>0?`風險訊號 ${x.f9.toFixed(2)} 低於門檻 0.30`:'未發現與高風險地址互動',noD:`風險訊號 ${x.f9.toFixed(2)} 超過門檻 0.30，拒絕放款`},
+    {t:'資金池流動性充足',ok:f.amount<=avail&&(totalBorrowed()+f.amount)/S.pool.deposits<=0.95,okD:`可用 ${fmt(avail)} 聰，放款後使用率 ${pct((totalBorrowed()+f.amount)/S.pool.deposits,1)}`,noD:`可用流動性 ${fmt(avail)} 聰不足，或放款後使用率超過 95%`}
+  ];
+  openModal(`<h2>📜 智能合約自動審核</h2><p class="muted" style="margin:6px 0 10px">申請 ${sats(f.amount)}・${f.term} 個月・抵押 ${sats(f.collateral)}</p>
+    ${checks.map((c,i)=>`<div class="check" id="ck${i}"><div class="ci">⏳</div><div><div class="ct">${i+1}. ${c.t}</div><div class="cd">等待檢查…</div></div></div>`).join('')}
+    <div id="verdict"></div><div class="row mt" style="justify-content:flex-end"><button class="btn hidden" id="auditClose">關閉</button></div>`);
+  const t0=performance.now();
+  for(let i=0;i<checks.length;i++){
+    const el=$('#ck'+i),c=checks[i];el.classList.add('on');el.querySelector('.ci').innerHTML='<span class="spin"></span>';el.querySelector('.cd').textContent='檢查中…';
+    await sleep(430);
+    el.querySelector('.ci').textContent=c.ok?'✅':'❌';el.querySelector('.cd').textContent=c.ok?c.okD:c.noD;if(!c.ok)el.classList.add('fail');
+  }
+  const pass=checks.every(c=>c.ok);
+  const secs=((performance.now()-t0)/1000*0.4).toFixed(1);
+  if(pass){
+    const pay=monthlyPay(f.amount,apr,f.term);
+    P.loans.push({id:Date.now(),grade:G.g,principal:f.amount,apr,term:f.term,paid:0,remaining:f.amount,payment:pay,collateral:f.collateral,status:'active',start:S.month});
+    P.wallet+=f.amount-f.collateral;
+    P.events.push({month:S.month,text:`✅ 核准借款 ${sats(f.amount)}（${G.g} 級、年利率 ${pct(apr,1)}、${f.term} 期），抵押 ${sats(f.collateral)}`});
+    $('#verdict').innerHTML=`<div class="verdict ok">✅ 全部通過，已核准放款！${sats(f.amount)} 已轉入錢包（審核耗時 ${secs} 秒）</div>`;
+    UI.loanForm=null;save();
+  }else{
+    $('#verdict').innerHTML=`<div class="verdict no">❌ 未通過 ${checks.filter(c=>!c.ok).length} 項檢查，不予放款。請依上方原因調整後再申請。</div>`;
+  }
+  $('#auditClose').classList.remove('hidden');if(pass)$('#auditClose').classList.add('primary');
+  UI.auditing=false;
+}
+
+/* ---- 時間快轉 ---- */
+function advanceMonth(mode){
+  const curId=cur();const before=curId&&per(curId).analyzed?scoreFor(curId):null;
+  let defaultInfo=null;const pool=S.pool;
+  // 其他借款人的利息與預期損失
+  let oi=0;for(const g in pool.others)oi+=pool.others[g]*GRADES.find(G=>G.g===g).apr/12;
+  const otherEL=Object.entries(pool.others).reduce((s,[g,b])=>{const G=GRADES.find(x=>x.g===g);return s+b*G.pd*G.lgd/12;},0);
+  pool.deposits+=oi*0.9;pool.reserve+=oi*0.1-otherEL;
+  const mNext=S.month+1;
+  for(const id in S.per){
+    const P=S.per[id];if(!P.connected)continue;
+    // 每月淨收入入帳
+    if(!PERSONAS[id].custom){const st=txFeatures(id).stats;P.wallet+=Math.max(0,st.avgIn-st.avgOut);}else P.wallet+=50000;
+    const m=id===curId?mode:'onTime';
+    for(const L of P.loans){
+      if(L.status!=='active')continue;
+      const r=L.apr/12,interest=L.remaining*r;
+      if(m==='default'){
+        const recovery=Math.round(L.collateral*0.95),rem=L.remaining;
+        const shortfall=Math.max(0,rem-recovery),refund=Math.max(0,recovery-rem);
+        const fromReserve=Math.min(shortfall,Math.max(0,pool.reserve)),lenderLoss=shortfall-fromReserve;
+        pool.reserve-=fromReserve;pool.deposits-=lenderLoss;P.wallet+=refund;
+        L.status='default';L.remaining=0;P.hist.def++;
+        defaultInfo={rem,collateral:L.collateral,recovery,shortfall,fromReserve,lenderLoss,refund,grade:L.grade};
+        P.events.push({month:mNext,text:`❌ 違約：未償 ${sats(rem)}，抵押品 ${sats(L.collateral)} 遭清算`});
+        pool.log.push({month:mNext,text:`${PERSONAS[id].name}違約，準備金補足缺口 ${sats(fromReserve)}${lenderLoss?`，出借人分攤 ${sats(lenderLoss)}`:''}`});
+        continue;
+      }
+      const princ=Math.min(L.remaining,L.payment-interest);
+      const penalty=m==='late'?L.payment*0.05:0;
+      L.remaining-=princ;L.paid++;
+      P.wallet=Math.max(0,P.wallet-L.payment-penalty);
+      pool.deposits+=interest*0.9;pool.reserve+=interest*0.1+penalty;
+      if(m==='late'){P.hist.late++;P.events.push({month:mNext,text:`⚠️ 逾期還款 ${sats(L.payment)}，另付罰金 ${sats(penalty)}`});}
+      else{P.hist.onTime++;if(id===curId)P.events.push({month:mNext,text:`✅ 準時還款 ${sats(L.payment)}（第 ${L.paid}/${L.term} 期）`});}
+      if(L.paid>=L.term||L.remaining<1){L.remaining=0;L.status='done';P.wallet+=L.collateral;P.events.push({month:mNext,text:`🎉 貸款結清，抵押品 ${sats(L.collateral)} 已退回錢包`});}
+    }
+  }
+  S.month=mNext;
+  for(const id in S.per){const P=S.per[id];if(P.analyzed)P.scoreHist.push({month:S.month,score:scoreFor(id).score});}
+  save();
+  if(before){
+    const after=scoreFor(curId),d=after.score-before.score;
+    if(after.grade!==before.grade){const up=GRADES.indexOf(after.grade)<GRADES.indexOf(before.grade);toast(`${up?'🎉 升級':'⚠️ 降級'}到 ${gbadge(after.grade.g,'sm')} 級！分數 ${before.score} → ${after.score}`,up?'good':'bad');}
+    else if(d)toast(`分數 ${before.score} → <b>${after.score}</b>（${d>0?'+':''}${d}）`,d>0?'good':'bad');
+    if(d)per(curId).events.push({month:S.month,text:`📈 信用分數 ${before.score} → ${after.score}（${d>0?'+':''}${d}）`});
+    save();
+  }
+  return defaultInfo;
+}
+async function showDefault(info){
+  const steps=[
+    {i:'⛔',t:'判定違約',v:`未償本金 ${sats(info.rem)}`},
+    {i:'🔒',t:'沒收抵押品',v:sats(info.collateral)},
+    {i:'🔨',t:'拍賣抵押品（折價 5%）',v:`回收 ${sats(info.recovery)}`},
+    {i:'🛡️',t:'保險準備金補足缺口',v:info.shortfall?sats(info.fromReserve):'無缺口'},
+    {i:'💼',t:'出借人損失',v:info.lenderLoss?`<span class="bad">${sats(info.lenderLoss)}</span>`:'<span class="good">0 聰</span>'},
+  ];
+  if(info.refund)steps.push({i:'↩️',t:'拍賣剩餘退回借款人',v:sats(info.refund)});
+  openModal(`<h2>🔨 清算流程</h2><p class="muted" style="margin:6px 0 10px">${info.grade} 級貸款違約，智能合約自動執行清算。</p><div class="flow">${steps.map((s,i)=>`<div class="fstep" id="fs${i}"><div class="fi">${s.i}</div><div>${s.t}</div><div class="fv">${s.v}</div></div>`).join('')}</div>
+    <div id="verdict"></div><div class="row mt" style="justify-content:flex-end"><button class="btn primary hidden" id="auditClose">了解</button></div>`);
+  for(let i=0;i<steps.length;i++){await sleep(380);$('#fs'+i).classList.add('on');}
+  $('#verdict').innerHTML=`<div class="verdict no">違約已寫入還款紀錄，信用分數下降。${info.lenderLoss?'':'出借人本金未受影響。'}</div>`;
+  $('#auditClose').classList.remove('hidden');
+}
+
+/* =========================================================
+   十一、出借人頁
+   ========================================================= */
+function renderLend(){
+  const pool=S.pool,lp=pool.lp,b=borrowedByGrade(),tb=totalBorrowed(),u=util(),price=sharePrice();
+  const pos=lp.shares*price,earn=pos-lp.principal,apy=supplyAPY(),el=expectedLoss(),resIn=annualInterest()*0.1;
+  const excess=Math.max(0,el-resIn),riskAdj=apy-excess/pool.deposits;
+  const cover=resIn/el;
+  $('#page-lend').innerHTML=`
+  <div class="kpis">
+    <div class="kpi"><div class="l">總存款</div><div class="v">${(pool.deposits/1e6).toFixed(2)}M</div><div class="s">百萬聰</div></div>
+    <div class="kpi"><div class="l">總借出</div><div class="v">${(tb/1e6).toFixed(2)}M</div><div class="s">百萬聰</div></div>
+    <div class="kpi"><div class="l">資金使用率</div><div class="v ${u>0.8?'warn':''}">${pct(u,1)}</div><div class="s">最佳 80%</div></div>
+    <div class="kpi"><div class="l">可用流動性</div><div class="v">${(available()/1e6).toFixed(2)}M</div><div class="s">百萬聰</div></div>
+    <div class="kpi"><div class="l">保險準備金</div><div class="v">${(pool.reserve/1e6).toFixed(2)}M</div><div class="s">百萬聰</div></div>
+    <div class="kpi"><div class="l">存款年化收益率</div><div class="v acc">${pct(apy,2)}</div><div class="s">風險調整後 ${pct(riskAdj,2)}</div></div>
+  </div>
+  <div class="grid g12 mt2">
+    <div class="card">
+      <div class="chead"><div><h2>我的存款部位</h2><p class="muted">💼 出借人視角：把聰存入資金池，賺取借款人支付的利息。</p></div></div>
+      <div class="stats">
+        <div class="stat"><div class="l">錢包餘額</div><div class="v">${fmt(lp.wallet)}</div><div class="s">聰</div></div>
+        <div class="stat"><div class="l">存款價值</div><div class="v acc">${fmt(pos)}</div><div class="s">聰</div></div>
+        <div class="stat"><div class="l">累積收益</div><div class="v ${earn>=0?'good':'bad'}">${earn>=0?'+':''}${fmt(earn)}</div><div class="s">聰</div></div>
+        <div class="stat"><div class="l">存款憑證價格</div><div class="v">${price.toFixed(5)}</div><div class="s">每份對應聰數</div></div>
+      </div>
+      <div class="field mt2"><label><span>金額</span><span class="faint">最多可提領 ${sats(Math.min(pos,available()))}</span></label><div class="inp"><input type="number" id="lpAmt" value="1000000" min="0" step="100000"><span>聰</span></div></div>
+      <div class="row"><button class="btn primary" id="lpDep">存入</button><button class="btn" id="lpWd">提領</button><span class="spacer"></span><button class="btn" data-ff="lend">⏩ 快轉 1 個月</button></div>
+      <p class="faint" style="font-size:12px;margin:12px 0 0">快轉時，所有借款人視為準時還款，利息的 90% 分配給出借人、10% 提撥到保險準備金。</p>
+    </div>
+    <div class="card">
+      <div class="chead"><div><h2>利率模型</h2><p class="muted">使用率越高，資金越稀缺，利率越高；超過 80% 後利率急升，鼓勵還款與存款。</p></div></div>
+      ${kinkSVG(u)}
+      <div class="legend"><span><i style="background:var(--accent)"></i>基準借款利率</span><span><i style="background:var(--info)"></i>基準存款利率</span><span>目前市場調整：<b class="num">${pct(marketAdj(u),2)}</b>（加在各等級利率上）</span></div>
+    </div>
+  </div>
+  <div class="grid g12">
+    <div class="card"><div class="chead"><h2>資金配置</h2></div><div style="max-width:240px;margin:0 auto">${donutSVG(b)}</div>
+      <div class="legend" style="justify-content:center">${['A','B','C','D'].map(g=>`<span><i style="background:${gColor(g)}"></i>${g} 級 ${pct(b[g]/(tb||1),0)}</span>`).join('')}</div></div>
+    <div class="card"><div class="chead"><div><h2>各等級風險與收益</h2><p class="muted">包含平台其他借款人與你在借貸池建立的貸款。</p></div></div>
+      <div class="tablewrap"><table class="t"><thead><tr><th>等級</th><th class="r">借出金額</th><th class="r">占比</th><th class="r">年利率</th><th class="r">年違約率</th><th class="r">違約損失率</th><th class="r">預期年損失</th></tr></thead><tbody>
+      ${['A','B','C','D'].map(g=>{const G=GRADES.find(x=>x.g===g);return `<tr><td>${gbadge(g,'sm')}</td><td class="r num">${fmt(b[g])}</td><td class="r num">${pct(b[g]/(tb||1),1)}</td><td class="r num">${pct(G.apr,0)}</td><td class="r num">${pct(G.pd,1)}</td><td class="r num">${pct(G.lgd,0)}</td><td class="r num">${fmt(b[g]*G.pd*G.lgd)}</td></tr>`;}).join('')}
+      </tbody></table></div>
+      <div class="grid g3 mt">
+        <div class="stat"><div class="l">準備金年提撥</div><div class="v">${fmt(resIn)}</div><div class="s">聰</div></div>
+        <div class="stat"><div class="l">預期年損失</div><div class="v">${fmt(el)}</div><div class="s">聰</div></div>
+        <div class="stat"><div class="l">準備金覆蓋率</div><div class="v ${cover>=1?'good':'bad'}">${pct(cover,0)}</div><div class="s">${cover>=1?'足以吸收預期損失':'不足，出借人承擔風險'}</div></div>
+      </div>
+      <h3 class="mt" style="margin-bottom:6px">資金池事件</h3>
+      <div class="events">${pool.log.length?pool.log.slice().reverse().map(e=>`<div class="ev"><span class="em">${monthLabel(e.month).text}</span><span>${e.text}</span></div>`).join(''):'<span class="muted">尚無事件。</span>'}</div>
+    </div>
+  </div>`;
+}
+function lpAction(kind){
+  const v=Math.floor(Number($('#lpAmt').value)||0),pool=S.pool,lp=pool.lp,price=sharePrice();
+  if(v<=0){toast('請輸入大於 0 的金額','bad');return;}
+  if(kind==='dep'){
+    if(v>lp.wallet){toast('錢包餘額不足','bad');return;}
+    lp.wallet-=v;lp.shares+=v/price;lp.principal+=v;pool.shares+=v/price;pool.deposits+=v;
+    toast(`已存入 ${sats(v)}`,'good');
+  }else{
+    const pos=lp.shares*price;
+    if(v>pos+0.5){toast('超過存款價值','bad');return;}
+    if(v>available()){toast('資金池可用流動性不足，請稍後再提領','bad');return;}
+    const sh=Math.min(lp.shares,v/price);lp.principal*=Math.max(0,1-v/pos);lp.shares-=sh;pool.shares-=sh;pool.deposits-=v;lp.wallet+=v;
+    toast(`已提領 ${sats(v)}`,'good');
+  }
+  save();render();
+}
+
+/* =========================================================
+   十二、隱私證明頁
+   ========================================================= */
+function renderZK(){
+  const id=cur(),root=$('#page-zk');
+  if(!id||!per(id).analyzed){root.innerHTML=emptyState('🔐','請先在「信用評分」頁完成 AI 分析，才能產生零知識證明。');return;}
+  const p=PERSONAS[id],sc=scoreFor(id),z=UI.zk,d=p.custom?null:dataOf(id),st=p.custom?null:txFeatures(id).stats;
+  root.innerHTML=`
+  <div class="card">
+    <div class="chead"><div><h2>出借方只需要知道「分數 ≥ 門檻」</h2><p class="muted">零知識證明讓${p.name}證明自己的信用分數達到門檻，同時不公開分數本身或任何交易明細。</p></div><span class="pill">${p.flag} ${p.name}</span></div>
+    <div class="field" style="max-width:560px"><label><span>出借方要求的分數門檻</span><b class="num acc" id="zkThVal">${z.threshold}</b></label><input type="range" id="zkTh" min="300" max="850" step="5" value="${z.threshold}"></div>
+    <div class="row"><button class="btn primary" id="zkRun">🔐 產生並驗證證明</button><span class="muted" style="font-size:13px">調高門檻超過實際分數，就能看到證明無法成立。</span></div>
+  </div>
+  <div class="grid g2">
+    <div class="zkcol trad"><h3>📂 傳統做法：交出全部資料</h3>
+      ${[[ '完整交易明細',d?`${fmt(d.tx.length)} 筆`:'全部'],['每月收入與支出',st?`月均 ${fmt(st.avgIn)} 聰`:'全部'],['所有交易對手',st?`${fmt(st.cpCount)} 位`:'全部'],['錢包地址與餘額',sats(per(id).wallet)],['繳費與借款紀錄','全部'],['確切信用分數',String(sc.score)]].map(([a,b])=>`<div class="leak"><span>👁️ ${a}</span><span class="bad num">${b}</span></div>`).join('')}
+      <p class="faint" style="font-size:12px;margin:10px 0 0">出借方可看見、保存、轉售所有資料；資料外洩時，借款人的收入與往來對象全部曝光。</p></div>
+    <div class="zkcol zk"><h3>🛡️ 零知識證明：只給一個結果</h3>
+      ${[['完整交易明細','不公開'],['每月收入與支出','不公開'],['所有交易對手','不公開'],['錢包地址與餘額','不公開'],['確切信用分數','不公開']].map(([a,b])=>`<div class="leak"><span>🙈 ${a}</span><span class="good">${b}</span></div>`).join('')}
+      <div class="leak"><span id="zkMiniLabel">✔️ 分數 ≥ ${z.threshold}</span><span class="${z.res?z.res.ok?'good':'bad':'faint'}" id="zkMini">${z.res?z.res.ok?'成立':'無法證明':'尚未驗證'}</span></div>
+      <p class="faint" style="font-size:12px;margin:10px 0 0">出借方只拿到一個「是／否」結果，以及無法反推原始資料的承諾值與證明。</p></div>
+  </div>
+  <div class="card">
+    <div class="chead"><div><h2>證明流程</h2><p class="muted">承諾 → 證明 → 驗證。黃色區塊只存在${p.name}的裝置上，藍色區塊是出借方能看到的內容。</p></div></div>
+    <div class="zkflow" id="zkFlow">${zkSteps()}</div>
+  </div>
+  <div class="notice">ℹ️ 概念示範：本頁的雜湊值與證明皆由前端模擬，用來說明運作流程，並非真實的零知識證明電路。</div>`;
+}
+function zkSteps(){
+  const id=cur(),sc=scoreFor(id),z=UI.zk,r=z.res,ph=z.phase;
+  const c=(n)=>ph>=n?(n===3&&r?(r.ok?'on ok':'on no'):(n===2&&r&&!r.ok?'on no':'on')):'';
+  return `
+  <div class="zstep ${c(1)}"><div class="zt"><span class="zn">1</span>承諾</div>
+    <div class="side priv">🔒 私密：只在借款人裝置</div>
+    <div style="font-size:13px">信用分數：<b class="num">${ph>=1?sc.score:'•••'}</b></div>
+    <div style="font-size:13px">隨機鹽值：</div><div class="hash" style="color:var(--warn)">${ph>=1?'0x'+r.salt:'—'}</div>
+    <div class="side pub mt">🌐 公開：承諾值 = 雜湊（分數 ‖ 鹽值）</div><div class="hash">${ph>=1?r.commit:'—'}</div></div>
+  <div class="zstep ${c(2)}"><div class="zt"><span class="zn">2</span>證明</div>
+    <div class="side priv">🔒 私密計算</div>
+    <div class="formula" style="white-space:normal">${ph>=2?`分數 − 門檻 = ${sc.score} − ${r.th} = <b class="${r.ok?'good':'bad'}">${sc.score-r.th}</b><br>${r.ok?'≥ 0，條件成立 ✓':'＜ 0，條件不成立 ✗'}`:'等待中…'}</div>
+    <div class="side pub mt">🌐 公開：證明</div><div class="hash" ${ph>=2&&r&&!r.ok?'style="color:var(--bad)"':''}>${ph>=2?(r.ok?r.proof:'無法產生有效證明'):'—'}</div></div>
+  <div class="zstep ${c(3)}"><div class="zt"><span class="zn">3</span>驗證</div>
+    <div class="side pub">🌐 出借方看到的內容</div>
+    <dl class="kv" style="font-size:13px"><dt>信用分數</dt><dd class="faint">不可見</dd><dt>門檻</dt><dd>${ph>=1?r.th:'—'}</dd><dt>承諾值</dt><dd>${ph>=1?short(r.commit):'—'}</dd><dt>證明</dt><dd>${ph>=2?(r.ok?short(r.proof):'無效'):'—'}</dd></dl>
+    <div class="zres ${ph>=3?(r.ok?'good':'bad'):'faint'}">${ph>=3?(r.ok?`✅ 驗證通過：分數 ≥ ${r.th}`:`❌ 驗證失敗：無法確認分數 ≥ ${r.th}`):'等待驗證…'}</div></div>`;
+}
+async function runZK(){
+  const z=UI.zk;if(z.running)return;z.running=true;
+  const id=cur(),sc=scoreFor(id),th=z.threshold,salt=randHex(16);
+  const commit=hash64(`${sc.score}|${salt}`),ok=sc.score>=th,proof=ok?hash64(`${commit}|${th}|${id}`):null;
+  z.res={salt,commit,proof,ok,th};
+  for(const ph of [1,2,3]){z.phase=ph;$('#zkFlow').innerHTML=zkSteps();await sleep(750);}
+  const m=$('#zkMini');if(m){m.className=ok?'good':'bad';m.textContent=ok?'成立':'無法證明';}
+  toast(ok?`✅ 證明成立：分數 ≥ ${th}，未揭露任何交易`:`❌ 分數未達 ${th}，無法產生有效證明`,ok?'good':'bad');
+  z.running=false;
+}
+
+/* =========================================================
+   十三、事件綁定
+   ========================================================= */
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('button,[data-go],#personaChip,#modalBg');if(!t)return;
+  if(t.id==='modalBg'){if(e.target===t&&!UI.auditing){closeModal();render();}return;}
+  if(t.dataset.tab){if(UI.connecting||UI.analyzing)return;S.tab=t.dataset.tab;save();render();window.scrollTo({top:0});return;}
+  if(t.dataset.go){S.tab=t.dataset.go;save();render();window.scrollTo({top:0});return;}
+  if(t.id==='personaChip'){S.tab='score';save();render();return;}
+  if(t.dataset.persona){connectPersona(t.dataset.persona);return;}
+  if(t.id==='runAIBtn'){runAI();return;}
+  if(t.id==='customResetBtn'){per(cur()).custom={...CUSTOM_DEFAULT};save();renderData(cur());if(per(cur()).analyzed){renderAI(cur(),false);renderResult(cur());renderHeader();renderScoreGridOnly();}return;}
+  if(t.id==='themeBtn'){S.theme=S.theme==='dark'?'light':'dark';save();render();return;}
+  if(t.id==='resetBtn'){if(confirm('確定要重置 Demo 嗎？所有角色、借款、存款與紀錄都會清除。')){const th=S.theme;S=defaultState();S.theme=th;UI.loanForm=null;UI.zk={threshold:650,phase:0,res:null};UI.revealed={};save();closeModal();render();window.scrollTo({top:0});toast('已重置 Demo');}return;}
+  if(t.dataset.term){UI.loanForm.term=Number(t.dataset.term);document.querySelectorAll('#lfTerm button').forEach(b=>b.classList.toggle('on',b===t));updateLoanCalc();return;}
+  if(t.id==='applyBtn'){runAudit();return;}
+  if(t.id==='auditClose'){closeModal();render();return;}
+  if(t.dataset.ff){
+    if(t.dataset.ff==='lend'){advanceMonth('onTime');toast(`⏩ 已前進到 ${monthLabel(S.month).text}`);render();return;}
+    const info=advanceMonth(t.dataset.ff);UI.loanForm=null;render();if(info)showDefault(info);return;
+  }
+  if(t.id==='lpDep'){lpAction('dep');return;}
+  if(t.id==='lpWd'){lpAction('wd');return;}
+  if(t.id==='zkRun'){runZK();return;}
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.feat){const id=cur(),P=per(id);P.custom[t.dataset.feat]=Number(t.value);$('#sv-'+t.dataset.feat).textContent=Number(t.value).toFixed(2);save();
+    if(P.analyzed){renderAI(id,false);renderResult(id);renderHeader();renderScoreGridOnly();}return;}
+  if(t.id==='lfAmount'||t.id==='lfAmountR'){const f=UI.loanForm,G=scoreFor(cur()).grade;f.amount=Math.max(0,Math.round(Number(t.value)||0));
+    if(t.id==='lfAmountR')$('#lfAmount').value=f.amount;else $('#lfAmountR').value=f.amount;
+    if(!f.touched){f.collateral=Math.round(f.amount*G.coll);$('#lfColl').value=f.collateral;}updateLoanCalc();return;}
+  if(t.id==='lfColl'){UI.loanForm.collateral=Math.max(0,Math.round(Number(t.value)||0));UI.loanForm.touched=true;updateLoanCalc();return;}
+  if(t.id==='zkTh'){if(UI.zk.running)return;UI.zk.threshold=Number(t.value);UI.zk.phase=0;UI.zk.res=null;$('#zkThVal').textContent=t.value;$('#zkFlow').innerHTML=zkSteps();$('#zkMiniLabel').textContent='✔️ 分數 ≥ '+t.value;const m=$('#zkMini');m.className='faint';m.textContent='尚未驗證';return;}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#modalBg')&&!UI.auditing){closeModal();render();}});
+
+load();
+if(S.persona&&!PERSONAS[S.persona])S.persona=null;
+render();
+</script>
+</body>
+</html>
